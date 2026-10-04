@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mochi Space - Your Cozy Self-Care Companion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Comfortaa:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tooplate-mochi-space.css">
+<!--
+
+Tooplate 2159 Mochi Space
+
+https://www.tooplate.com/view/2159-mochi-space
+
+Free HTML CSS Template
+
+-->
+</head>
+<body>
+    <!-- Floating Background Shapes -->
+    <div class="floating-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+        <div class="shape shape-4"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav id="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <div class="logo-blob"></div>
+                Mochi Space
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#how-it-works">How It Works</a></li>
+                <li><a href="#preview">Preview</a></li>
+                <li><a href="#testimonials">Reviews</a></li>
+            </ul>
+            <a href="#download" class="nav-cta">Download Free</a>
+            <div class="mobile-menu-btn" id="mobileMenuBtn">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu Overlay -->
+    <div class="mobile-menu-overlay" id="mobileOverlay"></div>
+
+    <!-- Mobile Menu Panel -->
+    <div class="mobile-menu" id="mobileMenu">
+        <ul class="mobile-menu-links">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#how-it-works">How It Works</a></li>
+            <li><a href="#preview">Preview</a></li>
+            <li><a href="#testimonials">Reviews</a></li>
+        </ul>
+        <a href="#download" class="mobile-menu-cta">Download Free</a>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-text">
+                <div class="hero-badge">
+                    <span class="sparkle">✨</span>
+                    Your cozy companion
+                </div>
+                <h1>Feel good, <span>one moment</span> at a time</h1>
+                <p>Meet Mochi, your adorable self-care buddy! Track moods, practice mindfulness, and build healthy habits — all wrapped in the coziest app experience.</p>
+                <div class="hero-buttons">
+                    <a href="#download" class="btn btn-primary">
+                        <span>🍡</span> Get Started Free
+                    </a>
+                    <a href="#preview" class="btn btn-secondary">
+                        <span>▶</span> See How It Works
+                    </a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <!-- Mochi Mascot -->
+                <div class="mochi mochi-main">
+                    <span class="mochi-sparkle">✨</span>
+                    <span class="mochi-sparkle">⭐</span>
+                    <span class="mochi-sparkle">💖</span>
+                    <div class="mochi-body">
+                        <div class="mochi-face">
+                            <div class="mochi-eye"></div>
+                            <div class="mochi-eye"></div>
+                        </div>
+                        <div class="mochi-blush left"></div>
+                        <div class="mochi-blush right"></div>
+                        <div class="mochi-mouth"></div>
+                    </div>
+                </div>
+
+                <!-- Phone Mockup -->
+                <div class="phone-mockup">
+                    <div class="phone-screen">
+                        <div class="phone-content">
+                            <div class="phone-clock-wrapper">
+                                <div class="phone-clock" id="phoneClock">
+                                    <span class="clock-time">00:00</span><span class="clock-seconds">:00</span>
+                                    <span class="clock-ampm"></span>
+                                </div>
+                                <button class="clock-toggle" id="clockToggle">24h</button>
+                            </div>
+                            <div class="phone-greeting" id="phoneGreeting">Good morning! 🌸</div>
+                            <div class="phone-mood-label">How are you feeling today?</div>
+                            <div class="phone-moods">
+                                <div class="mood-btn">😊</div>
+                                <div class="mood-btn active">🥰</div>
+                                <div class="mood-btn">😌</div>
+                                <div class="mood-btn">😔</div>
+                            </div>
+                            <div class="phone-card">
+                                <div class="phone-card-title">🌿 Breathing Exercise</div>
+                                <div class="breathing-circle"></div>
+                            </div>
+                        </div>
+                        <div class="phone-nav">
+                            <div class="phone-nav-item active">🏠</div>
+                            <div class="phone-nav-item">📝</div>
+                            <div class="phone-nav-item">🎵</div>
+                            <div class="phone-nav-item">⚙️</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Floating Elements -->
+                <div class="float-element float-heart">💕</div>
+                <div class="float-element float-star">⭐</div>
+                <div class="float-element float-cloud">☁️</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="section-header reveal">
+            <div class="section-badge">
+                <span>💝</span> Packed with love
+            </div>
+            <h2>Everything you need to feel your best</h2>
+            <p>Simple tools designed to help you build mindful habits and nurture your wellbeing every day.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card reveal">
+                <div class="feature-image">
+                    <div class="feature-image-inner">
+                        <div class="feature-screenshot mood-screenshot">
+                            <div class="mood-screenshot-title">How do you feel?</div>
+                            <div class="mood-screenshot-emojis">
+                                <div class="mood-screenshot-emoji">😊</div>
+                                <div class="mood-screenshot-emoji selected">🥰</div>
+                                <div class="mood-screenshot-emoji">😌</div>
+                                <div class="mood-screenshot-emoji">😔</div>
+                            </div>
+                            <div class="mood-screenshot-chart">
+                                <div class="mood-bar" style="height: 60%;"></div>
+                                <div class="mood-bar" style="height: 80%;"></div>
+                                <div class="mood-bar" style="height: 45%;"></div>
+                                <div class="mood-bar" style="height: 90%;"></div>
+                                <div class="mood-bar" style="height: 70%;"></div>
+                                <div class="mood-bar" style="height: 85%;"></div>
+                                <div class="mood-bar" style="height: 95%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-content">
+                    <h3><span>😊</span> Mood Tracking</h3>
+                    <p>Log how you're feeling with cute emoji check-ins. Discover patterns over time and celebrate your emotional journey with beautiful insights.</p>
+                    <span class="feature-tag">✨ Weekly insights</span>
+                </div>
+            </div>
+            <div class="feature-card reveal">
+                <div class="feature-image">
+                    <div class="feature-image-inner">
+                        <div class="feature-screenshot breathing-screenshot">
+                            <div class="breathing-screenshot-text">Breathe in...</div>
+                            <div class="breathing-screenshot-circle"></div>
+                            <div class="breathing-screenshot-timer">4 : 7 : 8 technique</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-content">
+                    <h3><span>🌬️</span> Breathing Exercises</h3>
+                    <p>Calm your mind with guided breathing techniques. Watch Mochi breathe along with you in soothing, synchronized animations.</p>
+                    <span class="feature-tag">🧘 5+ techniques</span>
+                </div>
+            </div>
+            <div class="feature-card reveal">
+                <div class="feature-image">
+                    <div class="feature-image-inner">
+                        <div class="feature-screenshot journal-screenshot">
+                            <div class="journal-screenshot-header">
+                                <div class="journal-screenshot-date">Today</div>
+                                <div class="journal-screenshot-mood">🥰</div>
+                            </div>
+                            <div class="journal-screenshot-card">
+                                <div class="journal-screenshot-label">I'm grateful for...</div>
+                                <div class="journal-screenshot-line"></div>
+                                <div class="journal-screenshot-line"></div>
+                                <div class="journal-screenshot-line"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-content">
+                    <h3><span>📔</span> Gratitude Journal</h3>
+                    <p>Write down three good things each day. Build a treasure trove of happy memories to look back on whenever you need a smile.</p>
+                    <span class="feature-tag">📝 Daily prompts</span>
+                </div>
+            </div>
+            <div class="feature-card reveal">
+                <div class="feature-image">
+                    <div class="feature-image-inner">
+                        <div class="feature-screenshot sleep-screenshot">
+                            <div class="sleep-screenshot-icon">🌙</div>
+                            <div class="sleep-screenshot-title">Ocean Waves</div>
+                            <div class="sleep-screenshot-waves">
+                                <div class="sleep-wave"></div>
+                                <div class="sleep-wave"></div>
+                                <div class="sleep-wave"></div>
+                                <div class="sleep-wave"></div>
+                                <div class="sleep-wave"></div>
+                                <div class="sleep-wave"></div>
+                                <div class="sleep-wave"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-content">
+                    <h3><span>🌙</span> Sleep Sounds</h3>
+                    <p>Drift off to dreamland with cozy soundscapes. Rain, waves, forest ambience, and more peaceful melodies to help you rest.</p>
+                    <span class="feature-tag">🎵 20+ sounds</span>
+                </div>
+            </div>
+            <div class="feature-card reveal">
+                <div class="feature-image">
+                    <div class="feature-image-inner">
+                        <div class="feature-screenshot affirmations-screenshot">
+                            <div class="affirmations-icon">💝</div>
+                            <div class="affirmations-card">
+                                <div class="affirmations-text">"You are worthy of love and kindness, especially from yourself."</div>
+                                <div class="affirmations-hearts">💕 💕 💕</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-content">
+                    <h3><span>💝</span> Daily Affirmations</h3>
+                    <p>Start each day with positive words from Mochi. Uplifting quotes and gentle reminders that you're doing amazing.</p>
+                    <span class="feature-tag">🌸 New daily</span>
+                </div>
+            </div>
+            <div class="feature-card reveal">
+                <div class="feature-image">
+                    <div class="feature-image-inner">
+                        <div class="feature-screenshot habits-screenshot">
+                            <div class="habits-title">Today's Habits</div>
+                            <div class="habits-list">
+                                <div class="habit-item">
+                                    <div class="habit-check done">✓</div>
+                                    <span>Drink water</span>
+                                    <span class="habit-streak">🔥 7 days</span>
+                                </div>
+                                <div class="habit-item">
+                                    <div class="habit-check done">✓</div>
+                                    <span>Morning stretch</span>
+                                    <span class="habit-streak">🔥 5 days</span>
+                                </div>
+                                <div class="habit-item">
+                                    <div class="habit-check pending">○</div>
+                                    <span>Read 10 mins</span>
+                                    <span class="habit-streak">🔥 3 days</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="feature-content">
+                    <h3><span>✅</span> Habit Tracker</h3>
+                    <p>Build healthy routines one check at a time. Track streaks, celebrate wins, and watch your progress bloom.</p>
+                    <span class="feature-tag">🏆 Streaks & rewards</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works" id="how-it-works">
+        <div class="section-header reveal">
+            <div class="section-badge">
+                <span>🎯</span> Super simple
+            </div>
+            <h2>Start feeling better in 3 easy steps</h2>
+            <p>No complicated setup. Just download, open, and let Mochi guide you to a calmer you.</p>
+        </div>
+        <div class="steps">
+            <div class="step reveal">
+                <div class="step-number">1</div>
+                <h3>Download & Meet Mochi</h3>
+                <p>Get the app for free and say hello to your new self-care buddy. Mochi is excited to meet you!</p>
+            </div>
+            <div class="step reveal">
+                <div class="step-number">2</div>
+                <h3>Check In Daily</h3>
+                <p>Spend just 2 minutes each day logging your mood and practicing a quick mindfulness exercise.</p>
+            </div>
+            <div class="step reveal">
+                <div class="step-number">3</div>
+                <h3>Watch Yourself Bloom</h3>
+                <p>Track your progress, unlock cute achievements, and see how small moments create big changes.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- App Preview -->
+    <section class="app-preview" id="preview">
+        <div class="section-header reveal">
+            <div class="section-badge">
+                <span>📱</span> Sneak peek
+            </div>
+            <h2>A cozy space just for you</h2>
+            <p>Every screen is designed to bring you calm and joy. Take a look inside!</p>
+        </div>
+        <div class="preview-screens">
+            <div class="preview-phone reveal">
+                <div class="preview-screen preview-screen-1">
+                    <div class="preview-mini-mochi"></div>
+                    <div class="preview-text">Welcome back! 🌸</div>
+                </div>
+            </div>
+            <div class="preview-phone reveal">
+                <div class="preview-screen preview-screen-2">
+                    <div class="preview-text">Breathe in...</div>
+                    <div class="preview-breath-circle"></div>
+                    <div class="preview-text">...and relax 💫</div>
+                </div>
+            </div>
+            <div class="preview-phone reveal">
+                <div class="preview-screen preview-screen-3">
+                    <div class="preview-journal">
+                        <div class="preview-journal-date">Today, January 9</div>
+                        <div class="preview-journal-mood">🥰</div>
+                        <div class="preview-journal-text">Grateful for: Morning coffee, a good book, and cozy blankets...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials" id="testimonials">
+        <div class="section-header reveal">
+            <div class="section-badge">
+                <span>💬</span> Love notes
+            </div>
+            <h2>What our community says</h2>
+            <p>Join thousands who've found their calm with Mochi Space.</p>
+        </div>
+        <div class="testimonials-grid">
+            <div class="testimonial-card reveal">
+                <div class="testimonial-avatar">👩‍🎨</div>
+                <p class="testimonial-text">"Mochi is the cutest thing ever! I look forward to my daily check-ins now. It's made mindfulness actually fun."</p>
+                <div class="testimonial-author">Sarah K.</div>
+                <div class="testimonial-role">Designer & Mom of 2</div>
+            </div>
+            <div class="testimonial-card reveal">
+                <div class="testimonial-avatar">👨‍💻</div>
+                <p class="testimonial-text">"As someone with anxiety, this app has been a game-changer. The breathing exercises help me calm down in minutes."</p>
+                <div class="testimonial-author">Marcus T.</div>
+                <div class="testimonial-role">Software Developer</div>
+            </div>
+            <div class="testimonial-card reveal">
+                <div class="testimonial-avatar">👩‍🎓</div>
+                <p class="testimonial-text">"I've tried so many wellness apps, but Mochi Space is the only one I've stuck with. It just feels like a warm hug!"</p>
+                <div class="testimonial-author">Emily R.</div>
+                <div class="testimonial-role">Graduate Student</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download CTA -->
+    <section class="download-cta" id="download">
+        <div class="cta-content reveal">
+            <div class="cta-mochi">
+                <div class="cta-mochi-mouth"></div>
+                <div class="cta-mochi-blush left"></div>
+                <div class="cta-mochi-blush right"></div>
+                <div class="cta-mochi-hand"></div>
+            </div>
+            <h2>Ready to find your Mochi Space?</h2>
+            <p>Download now and start your self-care journey with Mochi by your side. It's free, forever! 💕</p>
+            <div class="app-buttons">
+                <a href="#" class="app-btn">
+                    <span class="app-btn-icon">🍎</span>
+                    <div class="app-btn-text">
+                        <div class="app-btn-small">Download on the</div>
+                        <div class="app-btn-large">App Store</div>
+                    </div>
+                </a>
+                <a href="#" class="app-btn">
+                    <span class="app-btn-icon">🤖</span>
+                    <div class="app-btn-text">
+                        <div class="app-btn-small">Get it on</div>
+                        <div class="app-btn-large">Google Play</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-wrapper">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <a href="#" class="logo">
+                        <div class="logo-blob"></div>
+                        Mochi Space
+                    </a>
+                    <p>Your cozy self-care companion. Building mindful habits, one moment at a time. Made with 💕 for people who deserve a little more calm in their lives.</p>
+                    <div class="footer-social">
+                        <a href="#" class="social-icon">📸</a>
+                        <a href="#" class="social-icon">🐦</a>
+                        <a href="#" class="social-icon">📘</a>
+                        <a href="#" class="social-icon">🎵</a>
+                    </div>
+                </div>
+                <div class="footer-column">
+                    <h4>Product</h4>
+                    <ul>
+                        <li><a href="#">Features</a></li>
+                        <li><a href="#">Pricing</a></li>
+                        <li><a href="#">Download</a></li>
+                        <li><a href="#">Updates</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Company</h4>
+                    <ul>
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Press Kit</a></li>
+                        <li><a href="#">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Support</h4>
+                    <ul>
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Community</a></li>
+                        <li><a href="#">Privacy Policy</a></li>
+                        <li><a href="#">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 Mochi Space. All rights reserved.</p>
+                <p>Designed by <a href="https://www.tooplate.com" rel="nofollow" target="_blank">Tooplate</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="tooplate-mochi-script.js"></script>
+</body>
+</html>
