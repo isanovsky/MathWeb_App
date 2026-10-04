@@ -1,5 +1,5 @@
 /* Mathematics Behind Physics-Informed Neural Networks: interactive demos.
-   Part 1: numerics. Part 2: helpers. Part 3: one init function per demo. */
+   Part 1: numerics. Part 2: helpers and demos. Part 3: page flow, guide character, intro story. */
 
 /* =========================================================
    PART 1 - NUMERICS (no DOM access)
@@ -569,7 +569,7 @@ function drawNetwork(r) {
   };
   const node = (k, label, below, above) => {
     const [x, y] = P[k];
-    return '<circle cx="' + x + '" cy="' + y + '" r="24" fill="#fff" stroke="#333" stroke-width="1.3"/>' +
+    return '<circle id="nn-n-' + k + '" cx="' + x + '" cy="' + y + '" r="24" fill="#fff" stroke="#333" stroke-width="1.3"/>' +
       '<text x="' + x + '" y="' + (y + 5) + '" text-anchor="middle">' + label + '</text>' +
       (below ? '<text x="' + x + '" y="' + (y + 44) + '" text-anchor="middle" style="font-size:12px">' + below + '</text>' : '') +
       (above ? '<text x="' + x + '" y="' + (y - 34) + '" text-anchor="middle" style="font-size:12px;fill:#5f6368">' + above + '</text>' : '');
@@ -1245,6 +1245,351 @@ function initInverse() {
   setupData();
 }
 
+
+/* =========================================================
+   PART 3 - PAGE FLOW, GUIDE CHARACTER, INTRO STORY
+   ========================================================= */
+
+const REDUCED = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SVGNS = 'http://www.w3.org/2000/svg';
+
+const mascotSvg = (id, cls) =>
+  '<svg class="' + cls + '" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#' + id + '"></use></svg>';
+const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+/* ---------- page flow: chapter mascots, next links, reveal, progress bar, side contents ---------- */
+function initFlow() {
+  const sections = Array.from(document.querySelectorAll('main > section'));
+  const navLinks = Array.from(document.querySelectorAll('#nav-links a'));
+  const MOOD = {
+    'big-idea': 'neuro', 'introduction': 'neuro', 'neural-networks': 'neuro-think', 'differential-equations': 'neuro-think',
+    'pinns': 'neuro-ooh', 'forward': 'neuro', 'inverse': 'neuro-think', 'advantages': 'neuro-ooh', 'references': 'neuro'
+  };
+
+  sections.forEach((sec, i) => {
+    const h2 = sec.querySelector('h2');
+    if (h2) h2.insertAdjacentHTML('afterbegin', mascotSvg(MOOD[sec.id] || 'neuro', 'chapter-mascot'));
+    sec.querySelectorAll('h3').forEach((h) => { if (!h.id) h.id = slug(h.textContent); });
+    if (i < sections.length - 1) {          // guided "next" link at the end of every part
+      const next = sections[i + 1];
+      const label = navLinks.find((a) => a.getAttribute('href') === '#' + next.id);
+      sec.insertAdjacentHTML('beforeend',
+        '<div class="next-link"><a href="#' + next.id + '">Next: ' + (label ? label.textContent : '') + ' &rarr;</a></div>');
+    }
+  });
+
+  document.querySelectorAll('section .takeaway').forEach((el) => {
+    el.innerHTML = mascotSvg('neuro', 'mini-mascot') + '<span>' + el.innerHTML + '</span>';
+  });
+
+  // fade-in when a block first scrolls into view (skipped for reduced motion)
+  if ('IntersectionObserver' in window && !REDUCED) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => { if (e.isIntersecting || e.boundingClientRect.top < 0) { e.target.classList.add('in'); io.unobserve(e.target); } });
+    }, { threshold: 0.06, rootMargin: '0px 0px -30px 0px' });
+    sections.forEach((sec) => Array.from(sec.children).forEach((ch) => {
+      if (ch.tagName === 'H2') return;
+      ch.classList.add('reveal');
+      io.observe(ch);
+    }));
+  }
+
+  // reading progress and "on this page" list for the current part (wide screens only)
+  const bar = $('progress');
+  const toc = document.createElement('aside');
+  toc.id = 'toc';
+  toc.setAttribute('aria-label', 'On this page');
+  document.body.appendChild(toc);
+  let tocFor = null, ticking = false;
+
+  function buildToc(sec) {
+    if (tocFor === sec) return;
+    tocFor = sec;
+    const hs = sec ? Array.from(sec.querySelectorAll('h3')) : [];
+    if (!hs.length) { toc.classList.remove('show'); toc.innerHTML = ''; return; }
+    toc.innerHTML = '<div class="toc-title">On this page</div><ul>' +
+      hs.map((h) => '<li><a href="#' + h.id + '">' + h.textContent + '</a></li>').join('') + '</ul>';
+    toc.classList.add('show');
+  }
+
+  function onScroll() {
+    ticking = false;
+    const max = document.documentElement.scrollHeight - window.innerHeight;
+    bar.style.transform = 'scaleX(' + (max > 0 ? Math.min(1, window.scrollY / max) : 0) + ')';
+    let cur = null;
+    sections.forEach((s) => { if (s.getBoundingClientRect().top <= 110) cur = s; });
+    buildToc(cur);
+    if (cur) {
+      let on = -1;
+      Array.from(cur.querySelectorAll('h3')).forEach((h, i) => { if (h.getBoundingClientRect().top <= 140) on = i; });
+      toc.querySelectorAll('a').forEach((a, i) => a.classList.toggle('on', i === on));
+    }
+  }
+  window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
+  window.addEventListener('resize', onScroll);
+  onScroll();
+}
+
+/* ---------- hero guide: tips on click ---------- */
+function initHero() {
+  const btn = $('hero-mascot'), bubble = $('hero-bubble');
+  if (!btn) return;
+  const tips = [
+    'Hi, I am Neuro. I will show you how a curve can learn to obey the laws of physics.',
+    'Tip: every slider and number box on this page redraws a graph.',
+    'A neural network is just functions inside functions. Part 2 starts there.',
+    'The loss is a score for how badly the curve breaks the rule. Smaller is better.',
+    'The Train and Estimate buttons run real, tiny PINNs inside your browser.',
+    'Not sure where to begin? Open the Big Idea part: no mathematics needed.'
+  ];
+  let i = 0;
+  btn.addEventListener('click', () => {
+    i = (i + 1) % tips.length;
+    btn.classList.remove('hop');
+    void btn.offsetWidth;
+    btn.classList.add('hop');
+    bubble.classList.add('swap');
+    setTimeout(() => { bubble.textContent = tips[i]; bubble.classList.remove('swap'); }, 180);
+  });
+  btn.addEventListener('animationend', (e) => { if (e.animationName === 'hop') btn.classList.remove('hop'); });
+}
+
+/* ---------- 2.3: signal travelling through the network diagram ---------- */
+function initPulse() {
+  const btn = $('nn-animate');
+  if (!btn) return;
+  const P = { x1: [70, 90], x2: [70, 210], h1: [300, 90], h2: [300, 210], y: [540, 150] };
+
+  function send(svg, legs) {
+    legs.forEach((leg) => {
+      const c = document.createElementNS(SVGNS, 'circle');
+      c.setAttribute('class', 'pulse');
+      c.setAttribute('r', '5');
+      c.setAttribute('fill', COLOR.warm);
+      const m = document.createElementNS(SVGNS, 'animateMotion');
+      m.setAttribute('dur', '0.8s');
+      m.setAttribute('begin', 'indefinite');
+      m.setAttribute('fill', 'remove');
+      m.setAttribute('path', 'M' + P[leg[0]].join(' ') + ' L' + P[leg[1]].join(' '));
+      c.appendChild(m);
+      svg.appendChild(c);
+      m.beginElement();
+      setTimeout(() => c.remove(), 820);
+    });
+  }
+
+  btn.addEventListener('click', () => {
+    const svg = $('nn-svg');
+    svg.querySelectorAll('.pulse').forEach((n) => n.remove());
+    svg.querySelectorAll('.lit').forEach((n) => n.classList.remove('lit'));
+    btn.disabled = true;
+    send(svg, [['x1', 'h1'], ['x1', 'h2'], ['x2', 'h1'], ['x2', 'h2']]);
+    setTimeout(() => { ['h1', 'h2'].forEach((k) => { const n = $('nn-n-' + k); if (n) n.classList.add('lit'); }); send(svg, [['h1', 'y'], ['h2', 'y']]); }, 850);
+    setTimeout(() => { const n = $('nn-n-y'); if (n) n.classList.add('lit'); btn.disabled = false; }, 1700);
+  });
+}
+
+/* ---------- 4.1: walk through the pipeline once, until the reader takes over ---------- */
+function initPipelineAuto() {
+  const flow = $('pf-flow');
+  if (!flow) return;
+  const stages = Array.from(flow.querySelectorAll('.stage'));
+  let i = 0, timer = null;
+  const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+  stages.forEach((b) => b.addEventListener('click', (e) => { if (e.isTrusted) stop(); }));
+  if (REDUCED) return;
+  onceVisible(flow, () => {
+    timer = setInterval(() => {
+      i += 1;
+      stages[i].click();
+      if (i >= stages.length - 1) stop();
+    }, 2300);
+  });
+}
+
+/* ---------- Big idea: a real small PINN run, told in four steps ----------
+   Step 1 slides the weights between three random networks, step 2 shows the rule,
+   step 3 measures how badly the untrained curve breaks it, step 4 replays the
+   Levenberg-Marquardt iterations of a real training run (Bratu, C = 2). */
+function initStory() {
+  const svg = $('story-svg');
+  if (!svg) return;
+  const H = 12, C = 2, NBAR = 14, NSMP = 40;
+  const B = { x0: 50, x1: 610, top: 24, bot: 200, u0: -0.1, u1: 0.45, base: 306, k: 20, cap: 60 };
+  const X = (x) => B.x0 + (B.x1 - B.x0) * x;
+  const Y = (u) => B.bot - ((u - B.u0) / (B.u1 - B.u0)) * (B.bot - B.top);
+  const nets = [3, 4, 5].map((s) => initNet(H, s, 2.2, 0.45));
+  const exact = sampleFn((x) => bratuExact(C, x), 0, 1, 80);
+  /* Vertical range that fits the curves being shown (always includes u = 0, at least 0.45 tall). */
+  function fitRange(curves) {
+    let lo = 0, hi = 0;
+    curves.forEach((c) => c.forEach((p) => { lo = Math.min(lo, p.y); hi = Math.max(hi, p.y); }));
+    const span = Math.max(hi - lo, 0.45), mid = (hi + lo) / 2, pad = span * 0.12;
+    B.u0 = mid - span / 2 - pad;
+    B.u1 = mid + span / 2 + pad;
+  }
+  const pathOf = (pts) => pts.map((p, i) => (i ? 'L' : 'M') + X(p.x).toFixed(1) + ' ' + Y(p.y).toFixed(1)).join(' ');
+  const S = { stage: 1, t: 0, fi: 0, playing: false, visible: false, raf: null, last: 0, timers: [] };
+  let frames = null;
+  const stage1Curves = [];
+  nets.forEach((p, i) => {
+    const q = nets[(i + 1) % 3];
+    stage1Curves.push(sampleFn((x) => netU(p, H, x), 0, 1, 80));
+    stage1Curves.push(sampleFn((x) => netU(p.map((v, k) => 0.5 * (v + q[k])), H, x), 0, 1, 80));
+  });
+
+  const tabs = Array.from(document.querySelectorAll('#story-tabs .stage'));
+  const prev = $('story-prev'), next = $('story-next'), replay = $('story-replay'), caption = $('story-caption');
+
+  const CAPTIONS = {
+    1: 'A neural network is a <strong>flexible curve</strong>. Its shape is set by numbers called weights \\(W\\). Slide the weights and the curve changes shape.',
+    2: 'Physics gives a <strong>rule</strong>. Here it is the Bratu equation \\(u_{xx}+2e^{u}=0\\) with both ends pinned, \\(u(0)=u(1)=0\\). The dashed curve is one that obeys it.',
+    3: '<strong>Measure the mistakes.</strong> At sample points we check how badly the curve breaks the rule. The orange bars show \\(|u_{xx}+2e^{u}|\\); the loss is built from them (mean of squares, plus the error at the two pins).',
+    4: '<strong>Nudge and repeat.</strong> The optimiser changes the weights to shrink the bars, again and again, and the curve settles onto the dashed one. This is a real run: 12 tanh neurons, Levenberg–Marquardt.'
+  };
+
+  /* Pre-compute the training run once: curve, rule violation at sample points, loss. */
+  function ensureFrames() {
+    if (frames) return;
+    const xi = Array.from({ length: NSMP }, (_, i) => (i + 0.5) / NSMP);
+    const res = (p) => {
+      const r = [];
+      xi.forEach((x) => { const d = netD(p, H, x); r.push((d.uxx + C * Math.exp(d.u)) / Math.sqrt(NSMP)); });
+      [0, 1].forEach((xb) => r.push(netU(p, H, xb) / Math.sqrt(2)));
+      return r;
+    };
+    const xs = Array.from({ length: NBAR }, (_, j) => (j + 1) / (NBAR + 1));
+    const snap = (p, cost, it) => ({
+      it, cost,
+      curve: sampleFn((x) => netU(p, H, x), 0, 1, 80),
+      bars: xs.map((x) => { const d = netD(p, H, x); return { x, r: Math.abs(d.uxx + C * Math.exp(d.u)) }; })
+    });
+    let lm = { p: nets[0].slice(), mu: 1e-2, cost: 0 };
+    frames = [snap(lm.p, sumSq(res(lm.p)), 0)];
+    for (let i = 1; i <= 60; i++) {
+      lm = lmStep(lm, res);
+      frames.push(snap(lm.p, lm.cost, i));
+      if (lm.stalled || lm.cost < 1e-6) break;
+    }
+  }
+
+  function render() {
+    const st = S.stage;
+    let curve = null, weights = '', frame = null;
+    if (st === 1) {
+      let p = nets[0];
+      if (!REDUCED) {
+        const ph = S.t / 2600, i = Math.floor(ph) % 3, f = ph - Math.floor(ph), e = f * f * (3 - 2 * f);
+        p = nets[i].map((v, k) => v + (nets[(i + 1) % 3][k] - v) * e);
+      }
+      curve = sampleFn((x) => netU(p, H, x), 0, 1, 80);
+      weights = 'weights W:  a₁ = ' + num(p[0], 2) + ',  c₁ = ' + num(p[H], 2) + ',  v₁ = ' + num(p[2 * H], 2) + ',  …  (' + (3 * H + 1) + ' in total)';
+    } else if (st >= 3) {
+      frame = frames[Math.min(frames.length - 1, Math.floor(S.fi))];
+      curve = frame.curve;
+    }
+
+    if (st === 1) fitRange(stage1Curves);
+    else if (st === 2) fitRange([exact]);
+    else fitRange([curve, exact]);
+
+    let s = '<defs><clipPath id="story-clip"><rect x="' + (B.x0 - 6) + '" y="' + (B.top - 6) + '" width="' + (B.x1 - B.x0 + 12) + '" height="' + (B.bot - B.top + 12) + '"/></clipPath></defs>';
+    s += '<rect x="' + B.x0 + '" y="' + B.top + '" width="' + (B.x1 - B.x0) + '" height="' + (B.bot - B.top) + '" fill="none" stroke="#e4e4e0"/>';
+    s += '<line x1="' + B.x0 + '" y1="' + Y(0) + '" x2="' + B.x1 + '" y2="' + Y(0) + '" stroke="#bbb"/>';
+    s += '<text x="' + B.x0 + '" y="' + (B.bot + 18) + '" text-anchor="middle" style="fill:#5f6368">x = 0</text>';
+    s += '<text x="' + B.x1 + '" y="' + (B.bot + 18) + '" text-anchor="middle" style="fill:#5f6368">x = 1</text>';
+    s += '<text x="' + (B.x0 - 8) + '" y="' + (Y(0) + 4) + '" text-anchor="end" style="fill:#5f6368">0</text>';
+
+    if (st >= 2) s += '<path d="' + pathOf(exact) + '" fill="none" stroke="#9aa0a6" stroke-width="2.2" stroke-dasharray="6 5" clip-path="url(#story-clip)"/>';
+    if (curve) s += '<path d="' + pathOf(curve) + '" fill="none" stroke="' + COLOR.accent + '" stroke-width="2.8" stroke-linejoin="round" clip-path="url(#story-clip)"/>';
+    if (st >= 2) {
+      [0, 1].forEach((x) => {
+        s += '<rect x="' + (X(x) - 5) + '" y="' + (Y(0) - 5) + '" width="10" height="10" transform="rotate(45 ' + X(x) + ' ' + Y(0) + ')" fill="#fff" stroke="#222" stroke-width="1.6"/>';
+      });
+      s += '<text class="halo" x="' + (B.x0 + 12) + '" y="' + (Y(0) - 10) + '">u(0) = 0</text>';
+      s += '<text class="halo" x="' + (B.x1 - 12) + '" y="' + (Y(0) - 10) + '" text-anchor="end">u(1) = 0</text>';
+    }
+    if (st === 1) s += '<text x="' + (B.x0 + 8) + '" y="' + (B.top + 16) + '" style="fill:#5f6368">' + weights + '</text>';
+    if (st === 2) s += '<text x="' + ((B.x0 + B.x1) / 2) + '" y="' + (B.top + 22) + '" text-anchor="middle" class="big">rule:  uₓₓ + 2e^u = 0</text>';
+
+    if (st < 3) {
+      const hint = st === 1 ? 'Nothing forces this curve to obey any rule yet.' : 'In the next step we measure how far a curve is from obeying the rule.';
+      s += '<text x="' + ((B.x0 + B.x1) / 2) + '" y="' + (B.base - 34) + '" text-anchor="middle" style="fill:#5f6368;font-style:italic">' + hint + '</text>';
+    }
+    if (st >= 3 && frame) {
+      s += '<text x="' + B.x0 + '" y="' + (B.base - B.cap - 12) + '" style="fill:#5f6368">rule violation at sample points: |uₓₓ + 2e^u|</text>';
+      s += '<line x1="' + B.x0 + '" y1="' + B.base + '" x2="' + B.x1 + '" y2="' + B.base + '" stroke="#bbb"/>';
+      frame.bars.forEach((b) => {
+        const h = Math.max(1.5, Math.min(B.cap, b.r * B.k));
+        s += '<rect x="' + (X(b.x) - 8) + '" y="' + (B.base - h) + '" width="16" height="' + h.toFixed(1) + '" fill="' + COLOR.warm + '" opacity="0.85"/>';
+      });
+      s += '<text class="big" x="' + (B.x1 - 6) + '" y="' + (B.top + 20) + '" text-anchor="end">loss = ' + frame.cost.toExponential(1) + '</text>';
+      if (st === 4) s += '<text x="' + (B.x1 - 6) + '" y="' + (B.top + 38) + '" text-anchor="end" style="fill:#5f6368">iteration ' + frame.it + '</text>';
+    }
+    svg.innerHTML = s;
+  }
+
+  const animating = () => (S.stage === 1 && !REDUCED) || (S.stage === 4 && S.playing);
+
+  function tick(now) {
+    S.raf = null;
+    if (!S.visible) return;
+    const dt = Math.min(now - S.last, 100);
+    S.last = now;
+    S.t += dt;
+    if (S.stage === 4 && S.playing) {
+      S.fi += dt / 90;
+      if (S.fi >= frames.length - 1) { S.fi = frames.length - 1; S.playing = false; }
+    }
+    render();
+    if (animating()) S.raf = requestAnimationFrame(tick);
+  }
+
+  function kick() {
+    render();
+    if (S.visible && !S.raf && animating()) { S.last = performance.now(); S.raf = requestAnimationFrame(tick); }
+  }
+
+  function stopAuto() { S.timers.forEach(clearTimeout); S.timers = []; }
+
+  function setStage(n, byUser) {
+    if (byUser) stopAuto();
+    S.stage = n; S.fi = 0; S.playing = n === 4;
+    if (n >= 3) ensureFrames();
+    tabs.forEach((b) => b.classList.toggle('active', parseInt(b.dataset.s, 10) === n));
+    caption.innerHTML = CAPTIONS[n];
+    renderAuto(caption);
+    prev.disabled = n === 1;
+    next.disabled = n === 4;
+    replay.hidden = n !== 4;
+    kick();
+  }
+
+  tabs.forEach((b) => b.addEventListener('click', () => setStage(parseInt(b.dataset.s, 10), true)));
+  prev.addEventListener('click', () => setStage(Math.max(1, S.stage - 1), true));
+  next.addEventListener('click', () => setStage(Math.min(4, S.stage + 1), true));
+  replay.addEventListener('click', () => setStage(4, true));
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver((entries) => {
+      S.visible = entries.some((e) => e.isIntersecting);
+      if (S.visible) kick();
+    }, { threshold: 0.2 }).observe(svg);
+  } else {
+    S.visible = true;
+  }
+
+  setStage(1, false);
+  if (!REDUCED) {
+    onceVisible(svg, () => {      // play the story once, then leave it to the reader
+      S.timers = [
+        setTimeout(() => setStage(2, false), 3800),
+        setTimeout(() => setStage(3, false), 7400),
+        setTimeout(() => setStage(4, false), 11200)
+      ];
+    });
+  }
+}
 /* ---------- start-up ---------- */
 function init() {
   if (typeof katex === 'undefined' || typeof renderMathInElement !== 'function') {
@@ -1269,6 +1614,11 @@ function init() {
   initArchitecture();
   initForward();
   initInverse();
+  initFlow();
+  initHero();
+  initStory();
+  initPulse();
+  initPipelineAuto();
 }
 
 if (typeof document !== 'undefined') {

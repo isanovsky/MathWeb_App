@@ -17,11 +17,36 @@
 </head>
 <body>
 
+<!-- Neuro, the page guide: one body, three expressions. Drawn as SVG; no images are loaded. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <g id="neuro-body">
+      <path class="nr-line" d="M26 16 C24 10 19 8 15 9"/>
+      <path class="nr-line" d="M32 15 L32 7"/>
+      <path class="nr-line" d="M38 16 C40 10 45 8 49 9"/>
+      <circle class="nr-dot" cx="15" cy="9" r="2.8"/>
+      <circle class="nr-dot" cx="32" cy="6" r="2.8"/>
+      <circle class="nr-dot" cx="49" cy="9" r="2.8"/>
+      <path class="nr-body" d="M32 15 C48 15 57 26 57 39 C57 52 46 58 32 58 C18 58 7 52 7 39 C7 26 16 15 32 15Z"/>
+      <ellipse class="nr-eye" cx="23" cy="37" rx="2.8" ry="3.6"/>
+      <ellipse class="nr-eye" cx="41" cy="37" rx="2.8" ry="3.6"/>
+      <ellipse class="nr-blush" cx="15.5" cy="44" rx="4.6" ry="2.8"/>
+      <ellipse class="nr-blush" cx="48.5" cy="44" rx="4.6" ry="2.8"/>
+    </g>
+  </defs>
+  <symbol id="neuro" viewBox="0 0 64 64"><use href="#neuro-body"/><path class="nr-mouth" d="M27.5 45 Q32 50 36.5 45"/></symbol>
+  <symbol id="neuro-ooh" viewBox="0 0 64 64"><use href="#neuro-body"/><ellipse class="nr-eye-still" cx="32" cy="47" rx="2.6" ry="3.2"/></symbol>
+  <symbol id="neuro-think" viewBox="0 0 64 64"><use href="#neuro-body"/><path class="nr-mouth" d="M28 47 L36 46"/></symbol>
+</svg>
+
+<div id="progress" aria-hidden="true"></div>
+
 <nav id="navbar">
   <div class="nav-inner">
     <a href="#top" class="brand">PINNs</a>
     <button id="menu-btn" aria-expanded="false" aria-controls="nav-links">Menu</button>
     <ul id="nav-links">
+      <li><a href="#big-idea">Big Idea</a></li>
       <li><a href="#introduction">Introduction</a></li>
       <li><a href="#neural-networks">Neural Networks</a></li>
       <li><a href="#differential-equations">Differential Equations</a></li>
@@ -35,16 +60,68 @@
 </nav>
 
 <header id="top" class="hero">
-  <div class="wrap">
-    <h1>Mathematics Behind Physics-Informed Neural Networks</h1>
-    <p class="subtitle">Understanding the mathematics behind neural networks, differential equations, and PINNs.</p>
-    <p class="byline">Muhammad Luthfi Shahab<br>
-      International Lecture Series in Mathematics &amp; Statistics (ILMS 2026)<br>
-      <span class="muted">Mathematics and Statistics for a Sustainable and Data-Driven ASEAN Future &middot; 24 September 2026</span></p>
+  <svg class="hero-wave" viewBox="0 0 900 160" preserveAspectRatio="none" aria-hidden="true">
+    <path class="wave w1" d="M0 80 C75 20 150 20 225 80 S375 140 450 80 S600 20 675 80 S825 140 900 80"/>
+    <path class="wave w2" d="M0 80 C75 20 150 20 225 80 S375 140 450 80 S600 20 675 80 S825 140 900 80"/>
+  </svg>
+  <div class="wrap hero-grid">
+    <div class="hero-text">
+      <h1>Mathematics Behind Physics-Informed Neural Networks</h1>
+      <p class="subtitle">Understanding the mathematics behind neural networks, differential equations, and PINNs.</p>
+      <p class="byline">Muhammad Luthfi Shahab<br>
+        International Lecture Series in Mathematics &amp; Statistics (ILMS 2026)<br>
+        <span class="muted">Mathematics and Statistics for a Sustainable and Data-Driven ASEAN Future &middot; 24 September 2026</span></p>
+      <p><a class="start-link" href="#big-idea">New to this? Start with the big idea</a></p>
+    </div>
+    <div class="hero-guide">
+      <div class="bubble" id="hero-bubble" role="status">Hi, I am Neuro. I will show you how a curve can learn to obey the laws of physics.</div>
+      <button type="button" class="hero-mascot" id="hero-mascot" aria-label="Neuro, the guide of this page. Press for another tip.">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><use href="#neuro"></use></svg>
+      </button>
+    </div>
   </div>
 </header>
 
 <main class="wrap">
+
+<!-- ============================ START HERE: THE BIG IDEA ============================ -->
+<section id="big-idea">
+  <h2>Start here: the big idea</h2>
+  <p class="lead">No mathematics is needed for this part. Three questions, one picture.</p>
+  <dl class="qa">
+    <dt>What is a differential equation?</dt>
+    <dd>A rule that says how something changes: how heat spreads, how a fluid flows, how a hanging cable bends.
+        To <em>solve</em> it means to find the curve (or surface) that obeys the rule.</dd>
+    <dt>What is a neural network?</dt>
+    <dd>A very flexible curve with many knobs. The knobs are numbers called <em>weights</em>; turn them and the shape of the curve changes.</dd>
+    <dt>What is a physics-informed neural network (PINN)?</dt>
+    <dd>Turn the knobs until the curve obeys the rule. The rule itself is the teacher, so for a forward problem no measured
+        solution is needed, only the rule and the conditions at the boundary.</dd>
+  </dl>
+  <p>Think of bending a flexible wire so that it passes through two fixed pins and also bends the way the rule demands.
+     Check where it disobeys, bend it a little, check again. Watch exactly this happen below; it is a real run of a small PINN in your browser.</p>
+
+  <div class="demo story">
+    <div class="demo-title">The idea in four steps</div>
+    <div class="flow story-tabs" id="story-tabs">
+      <button type="button" class="stage active" data-s="1">1 A flexible curve</button>
+      <button type="button" class="stage" data-s="2">2 A rule from physics</button>
+      <button type="button" class="stage" data-s="3">3 Measure the mistakes</button>
+      <button type="button" class="stage" data-s="4">4 Nudge and repeat</button>
+    </div>
+    <div class="svg-wrap"><svg id="story-svg" viewBox="0 0 640 330" role="img" aria-label="Animation: a curve is trained until it obeys the rule"></svg></div>
+    <div class="story-caption">
+      <svg class="mini-mascot" viewBox="0 0 64 64" aria-hidden="true"><use href="#neuro"></use></svg>
+      <p id="story-caption"></p>
+    </div>
+    <div class="btn-row">
+      <button type="button" id="story-prev">Back</button>
+      <button type="button" id="story-next">Next step</button>
+      <button type="button" id="story-replay" hidden>Replay</button>
+    </div>
+  </div>
+  <p class="takeaway">A PINN is a flexible curve that is trained, step by step, to break the rule less and less.</p>
+</section>
 
 <!-- ============================ 1. INTRODUCTION ============================ -->
 <section id="introduction">
@@ -119,6 +196,7 @@
         <div class="btn-row">
           <button type="button" id="nn-reset">Reset values</button>
           <button type="button" id="nn-random">Random values</button>
+          <button type="button" id="nn-animate">Animate forward pass</button>
         </div>
       </div>
     </div>
