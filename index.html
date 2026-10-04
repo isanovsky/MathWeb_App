@@ -1,475 +1,513 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mochi Space - Your Cozy Self-Care Companion</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Comfortaa:wght@500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="tooplate-mochi-space.css">
-<!--
-
-Tooplate 2159 Mochi Space
-
-https://www.tooplate.com/view/2159-mochi-space
-
-Free HTML CSS Template
-
--->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mathematics Behind Physics-Informed Neural Networks (PINNs)</title>
+  <meta name="description" content="Interactive lecture notes: feedforward neural networks, differential equations, and physics-informed neural networks.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script defer src="script.js"></script>
 </head>
 <body>
-    <!-- Floating Background Shapes -->
-    <div class="floating-shapes">
-        <div class="shape shape-1"></div>
-        <div class="shape shape-2"></div>
-        <div class="shape shape-3"></div>
-        <div class="shape shape-4"></div>
+
+<nav id="navbar">
+  <div class="nav-inner">
+    <a href="#top" class="brand">PINNs</a>
+    <button id="menu-btn" aria-expanded="false" aria-controls="nav-links">Menu</button>
+    <ul id="nav-links">
+      <li><a href="#introduction">Introduction</a></li>
+      <li><a href="#neural-networks">Neural Networks</a></li>
+      <li><a href="#differential-equations">Differential Equations</a></li>
+      <li><a href="#pinns">PINNs</a></li>
+      <li><a href="#forward">Forward Problem</a></li>
+      <li><a href="#inverse">Inverse Problem</a></li>
+      <li><a href="#advantages">Advantages</a></li>
+      <li><a href="#references">References</a></li>
+    </ul>
+  </div>
+</nav>
+
+<header id="top" class="hero">
+  <div class="wrap">
+    <h1>Mathematics Behind Physics-Informed Neural Networks</h1>
+    <p class="subtitle">Understanding the mathematics behind neural networks, differential equations, and PINNs.</p>
+    <p class="byline">Muhammad Luthfi Shahab<br>
+      International Lecture Series in Mathematics &amp; Statistics (ILMS 2026)<br>
+      <span class="muted">Mathematics and Statistics for a Sustainable and Data-Driven ASEAN Future &middot; 24 September 2026</span></p>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- ============================ 1. INTRODUCTION ============================ -->
+<section id="introduction">
+  <h2>1. Introduction</h2>
+  <p>
+    Physics-informed neural networks (PINNs) use a feedforward neural network to approximate the solution of a
+    differential equation. To see why this works, three ingredients are needed, in this order:
+  </p>
+  <ol class="outline">
+    <li><a href="#neural-networks">Feedforward neural networks</a>: a neural network is a composite function.</li>
+    <li><a href="#differential-equations">Differential equations</a>: the Bratu equation (ODE) and the Burgers equation (PDE), and how they are solved classically.</li>
+    <li><a href="#pinns">Physics-informed neural networks</a>: the network is trained so that it satisfies the equation, followed by
+      <a href="#forward">forward</a> and <a href="#inverse">inverse</a> problems.</li>
+  </ol>
+  <p>
+    Each part follows the same pattern: concept, formulation, an interactive example, and a short takeaway.
+    Change the parameters in the control panels and the graphs update immediately.
+  </p>
+  <details>
+    <summary>What is real and what is illustrative on this page</summary>
+    <ul>
+      <li>The network diagrams, the layer-wise and matrix calculators, the finite difference demo, the Bratu graph, and the loss calculator evaluate the exact formulas from the slides.</li>
+      <li>The buttons labelled <em>Train</em> and <em>Estimate</em> run a real but very small optimisation in your browser: one hidden layer of tanh neurons, trained with the Levenberg&ndash;Marquardt algorithm. The slides use BFGS for some examples and their own MATLAB code, so the numbers here will not be identical to the slides.</li>
+      <li>Several formulas and figures in the slides are images (the analytical Bratu solution, the Burgers equation, the architecture figure). How they were reconstructed is listed under <a href="#references">References</a>.</li>
+    </ul>
+  </details>
+</section>
+
+<!-- ============================ 2. FEEDFORWARD NNs ============================ -->
+<section id="neural-networks">
+  <h2>2. Feedforward Neural Networks</h2>
+
+  <h3>2.1 Composite function</h3>
+  <p>A composite function is a function formed by applying one function to the output of another function.
+     For \(f(x)=x^2\) and \(g(x)=x+1\), the composite function is</p>
+  $$y = f\circ g(x) = f(g(x)) = (x+1)^2 .$$
+  <p>More compositions chain the same idea:</p>
+  $$x \;\to\; f_1(x) \;\to\; f_2\big(f_1(x)\big) \;\to\; f_3\Big(f_2\big(f_1(x)\big)\Big)$$
+
+  <div class="demo">
+    <div class="demo-title">Interactive composite function</div>
+    <div id="cf-flow" class="flow"></div>
+    <div id="cf-steps" class="steps"></div>
+    <div class="demo-grid">
+      <div class="chart-box"><canvas id="cf-chart" aria-label="Graph of g(x) and f(g(x))"></canvas></div>
+      <div class="controls" id="cf-controls"></div>
     </div>
+  </div>
+  <p class="takeaway">A network is built the same way: the output of one operation becomes the input of the next.</p>
 
-    <!-- Navigation -->
-    <nav id="navbar">
-        <div class="nav-container">
-            <a href="#" class="logo">
-                <div class="logo-blob"></div>
-                Mochi Space
-            </a>
-            <ul class="nav-links">
-                <li><a href="#features">Features</a></li>
-                <li><a href="#how-it-works">How It Works</a></li>
-                <li><a href="#preview">Preview</a></li>
-                <li><a href="#testimonials">Reviews</a></li>
-            </ul>
-            <a href="#download" class="nav-cta">Download Free</a>
-            <div class="mobile-menu-btn" id="mobileMenuBtn">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
+  <h3>2.2 Feedforward neural network</h3>
+  <p>A feedforward neural network is a composite function of multiple variables, consisting of many linear and nonlinear functions.
+     For example, \(y = f(w_1x_1+w_2x_2+b_1)\) makes \(y\) a function of \(x_1\) and \(x_2\), and</p>
+  $$y = f\Big(w_5\, f(w_1x_1+w_2x_2+b_1) + w_6\, f(w_3x_1+w_4x_2+b_2) + b_3\Big),$$
+  <p>where \(f\) is a nonlinear activation function, such as \(\tanh\) or ReLU. Here \(w\) is a <em>weight</em> and \(b\) is a <em>bias</em>;
+     sometimes all of them are called weights or trainable parameters. A feedforward neural network is also called a
+     multilayer perceptron or a fully connected network.</p>
+
+  <h3>2.3 Layer-wise computation</h3>
+  <p>Instead of computing the whole expression at once, write it layer by layer:</p>
+  $$h_1 = f(w_1x_1+w_2x_2+b_1),\qquad h_2 = f(w_3x_1+w_4x_2+b_2),\qquad y = f(w_5h_1+w_6h_2+b_3).$$
+  <p>This is a neural network with one hidden layer containing two neurons (nodes). Edit any value below; the diagram and every step of the computation are recomputed.</p>
+
+  <div class="demo">
+    <div class="demo-title">Neural network and layer-wise calculator</div>
+    <div class="svg-wrap"><svg id="nn-svg" viewBox="0 0 640 300" role="img" aria-label="Neural network diagram with two inputs, two hidden neurons and one output"></svg></div>
+    <div class="demo-grid">
+      <div id="nn-steps" class="steps"></div>
+      <div class="controls">
+        <div id="nn-act-controls"></div>
+        <div id="nn-inputs" class="param-grid"></div>
+        <div class="btn-row">
+          <button type="button" id="nn-reset">Reset values</button>
+          <button type="button" id="nn-random">Random values</button>
         </div>
-    </nav>
-
-    <!-- Mobile Menu Overlay -->
-    <div class="mobile-menu-overlay" id="mobileOverlay"></div>
-
-    <!-- Mobile Menu Panel -->
-    <div class="mobile-menu" id="mobileMenu">
-        <ul class="mobile-menu-links">
-            <li><a href="#features">Features</a></li>
-            <li><a href="#how-it-works">How It Works</a></li>
-            <li><a href="#preview">Preview</a></li>
-            <li><a href="#testimonials">Reviews</a></li>
-        </ul>
-        <a href="#download" class="mobile-menu-cta">Download Free</a>
+      </div>
     </div>
+    <p class="note" id="nn-act-note"></p>
+  </div>
+  <p class="takeaway">Each neuron computes a weighted sum of its inputs, adds a bias, and applies the activation function.</p>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-content">
-            <div class="hero-text">
-                <div class="hero-badge">
-                    <span class="sparkle">✨</span>
-                    Your cozy companion
-                </div>
-                <h1>Feel good, <span>one moment</span> at a time</h1>
-                <p>Meet Mochi, your adorable self-care buddy! Track moods, practice mindfulness, and build healthy habits — all wrapped in the coziest app experience.</p>
-                <div class="hero-buttons">
-                    <a href="#download" class="btn btn-primary">
-                        <span>🍡</span> Get Started Free
-                    </a>
-                    <a href="#preview" class="btn btn-secondary">
-                        <span>▶</span> See How It Works
-                    </a>
-                </div>
-            </div>
-            <div class="hero-visual">
-                <!-- Mochi Mascot -->
-                <div class="mochi mochi-main">
-                    <span class="mochi-sparkle">✨</span>
-                    <span class="mochi-sparkle">⭐</span>
-                    <span class="mochi-sparkle">💖</span>
-                    <div class="mochi-body">
-                        <div class="mochi-face">
-                            <div class="mochi-eye"></div>
-                            <div class="mochi-eye"></div>
-                        </div>
-                        <div class="mochi-blush left"></div>
-                        <div class="mochi-blush right"></div>
-                        <div class="mochi-mouth"></div>
-                    </div>
-                </div>
+  <h3>2.4 Matrix representation</h3>
+  <p>Matrix and vector computations are faster, so the same network is written with matrices. In column form,</p>
+  $$H_1=\begin{bmatrix}h_1\\ h_2\end{bmatrix}=f\!\left(\begin{bmatrix}w_1&amp;w_2\\ w_3&amp;w_4\end{bmatrix}\begin{bmatrix}x_1\\ x_2\end{bmatrix}+\begin{bmatrix}b_1\\ b_2\end{bmatrix}\right)=f(W_1X+B_1),\qquad
+    y=f\!\left(\begin{bmatrix}w_5&amp;w_6\end{bmatrix}\begin{bmatrix}h_1\\ h_2\end{bmatrix}+b_3\right)=f(W_2H_1+B_2).$$
+  <p>Or, in row form,</p>
+  $$H_1=\begin{bmatrix}h_1&amp;h_2\end{bmatrix}=f\!\left(\begin{bmatrix}x_1&amp;x_2\end{bmatrix}\begin{bmatrix}w_1&amp;w_3\\ w_2&amp;w_4\end{bmatrix}+\begin{bmatrix}b_1&amp;b_2\end{bmatrix}\right)=f(XW_1+B_1),\qquad
+    y=f\!\left(\begin{bmatrix}h_1&amp;h_2\end{bmatrix}\begin{bmatrix}w_5\\ w_6\end{bmatrix}+b_3\right)=f(H_1W_2+B_2).$$
 
-                <!-- Phone Mockup -->
-                <div class="phone-mockup">
-                    <div class="phone-screen">
-                        <div class="phone-content">
-                            <div class="phone-clock-wrapper">
-                                <div class="phone-clock" id="phoneClock">
-                                    <span class="clock-time">00:00</span><span class="clock-seconds">:00</span>
-                                    <span class="clock-ampm"></span>
-                                </div>
-                                <button class="clock-toggle" id="clockToggle">24h</button>
-                            </div>
-                            <div class="phone-greeting" id="phoneGreeting">Good morning! 🌸</div>
-                            <div class="phone-mood-label">How are you feeling today?</div>
-                            <div class="phone-moods">
-                                <div class="mood-btn">😊</div>
-                                <div class="mood-btn active">🥰</div>
-                                <div class="mood-btn">😌</div>
-                                <div class="mood-btn">😔</div>
-                            </div>
-                            <div class="phone-card">
-                                <div class="phone-card-title">🌿 Breathing Exercise</div>
-                                <div class="breathing-circle"></div>
-                            </div>
-                        </div>
-                        <div class="phone-nav">
-                            <div class="phone-nav-item active">🏠</div>
-                            <div class="phone-nav-item">📝</div>
-                            <div class="phone-nav-item">🎵</div>
-                            <div class="phone-nav-item">⚙️</div>
-                        </div>
-                    </div>
-                </div>
+  <div class="demo">
+    <div class="demo-title">Matrix calculator (row form, same values and activation as in section 2.3)</div>
+    <div id="mx-stages" class="vflow"></div>
+    <p class="note" id="mx-check"></p>
+  </div>
 
-                <!-- Floating Elements -->
-                <div class="float-element float-heart">💕</div>
-                <div class="float-element float-star">⭐</div>
-                <div class="float-element float-cloud">☁️</div>
-            </div>
-        </div>
-    </section>
+  <h3>2.5 Adding more hidden layers</h3>
+  <p>A network with 2 inputs, 4 hidden layers of 20 nodes each, and 1 output, with \(X=[x\;\;y]\):</p>
+  $$H_1=f(XW_1+B_1),\; H_2=f(H_1W_2+B_2),\; H_3=f(H_2W_3+B_3),\; H_4=f(H_3W_4+B_4),\; u=f(H_4W_5+B_5).$$
+  <p>\(W_1\) is a \(2\times 20\) matrix. What are the sizes of the other weight and bias matrices? Change the architecture below to see them.
+     The same formulas hold for vector inputs \(x\) and \(y\): with \(N\) points, \(X\) is \(N\times 2\) and each \(H_k\) is \(N\times 20\).</p>
+  <div class="demo">
+    <div class="demo-title">Matrix sizes and number of trainable parameters</div>
+    <div class="demo-grid">
+      <div>
+        <table class="size-table" id="ds-table">
+          <thead><tr><th>Layer</th><th>Weight \(W_k\)</th><th>Bias \(B_k\)</th><th>Parameters</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="ds-total" class="note"></p>
+      </div>
+      <div class="controls" id="ds-controls"></div>
+    </div>
+  </div>
 
-    <!-- Features Section -->
-    <section class="features" id="features">
-        <div class="section-header reveal">
-            <div class="section-badge">
-                <span>💝</span> Packed with love
-            </div>
-            <h2>Everything you need to feel your best</h2>
-            <p>Simple tools designed to help you build mindful habits and nurture your wellbeing every day.</p>
-        </div>
-        <div class="features-grid">
-            <div class="feature-card reveal">
-                <div class="feature-image">
-                    <div class="feature-image-inner">
-                        <div class="feature-screenshot mood-screenshot">
-                            <div class="mood-screenshot-title">How do you feel?</div>
-                            <div class="mood-screenshot-emojis">
-                                <div class="mood-screenshot-emoji">😊</div>
-                                <div class="mood-screenshot-emoji selected">🥰</div>
-                                <div class="mood-screenshot-emoji">😌</div>
-                                <div class="mood-screenshot-emoji">😔</div>
-                            </div>
-                            <div class="mood-screenshot-chart">
-                                <div class="mood-bar" style="height: 60%;"></div>
-                                <div class="mood-bar" style="height: 80%;"></div>
-                                <div class="mood-bar" style="height: 45%;"></div>
-                                <div class="mood-bar" style="height: 90%;"></div>
-                                <div class="mood-bar" style="height: 70%;"></div>
-                                <div class="mood-bar" style="height: 85%;"></div>
-                                <div class="mood-bar" style="height: 95%;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="feature-content">
-                    <h3><span>😊</span> Mood Tracking</h3>
-                    <p>Log how you're feeling with cute emoji check-ins. Discover patterns over time and celebrate your emotional journey with beautiful insights.</p>
-                    <span class="feature-tag">✨ Weekly insights</span>
-                </div>
-            </div>
-            <div class="feature-card reveal">
-                <div class="feature-image">
-                    <div class="feature-image-inner">
-                        <div class="feature-screenshot breathing-screenshot">
-                            <div class="breathing-screenshot-text">Breathe in...</div>
-                            <div class="breathing-screenshot-circle"></div>
-                            <div class="breathing-screenshot-timer">4 : 7 : 8 technique</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="feature-content">
-                    <h3><span>🌬️</span> Breathing Exercises</h3>
-                    <p>Calm your mind with guided breathing techniques. Watch Mochi breathe along with you in soothing, synchronized animations.</p>
-                    <span class="feature-tag">🧘 5+ techniques</span>
-                </div>
-            </div>
-            <div class="feature-card reveal">
-                <div class="feature-image">
-                    <div class="feature-image-inner">
-                        <div class="feature-screenshot journal-screenshot">
-                            <div class="journal-screenshot-header">
-                                <div class="journal-screenshot-date">Today</div>
-                                <div class="journal-screenshot-mood">🥰</div>
-                            </div>
-                            <div class="journal-screenshot-card">
-                                <div class="journal-screenshot-label">I'm grateful for...</div>
-                                <div class="journal-screenshot-line"></div>
-                                <div class="journal-screenshot-line"></div>
-                                <div class="journal-screenshot-line"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="feature-content">
-                    <h3><span>📔</span> Gratitude Journal</h3>
-                    <p>Write down three good things each day. Build a treasure trove of happy memories to look back on whenever you need a smile.</p>
-                    <span class="feature-tag">📝 Daily prompts</span>
-                </div>
-            </div>
-            <div class="feature-card reveal">
-                <div class="feature-image">
-                    <div class="feature-image-inner">
-                        <div class="feature-screenshot sleep-screenshot">
-                            <div class="sleep-screenshot-icon">🌙</div>
-                            <div class="sleep-screenshot-title">Ocean Waves</div>
-                            <div class="sleep-screenshot-waves">
-                                <div class="sleep-wave"></div>
-                                <div class="sleep-wave"></div>
-                                <div class="sleep-wave"></div>
-                                <div class="sleep-wave"></div>
-                                <div class="sleep-wave"></div>
-                                <div class="sleep-wave"></div>
-                                <div class="sleep-wave"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="feature-content">
-                    <h3><span>🌙</span> Sleep Sounds</h3>
-                    <p>Drift off to dreamland with cozy soundscapes. Rain, waves, forest ambience, and more peaceful melodies to help you rest.</p>
-                    <span class="feature-tag">🎵 20+ sounds</span>
-                </div>
-            </div>
-            <div class="feature-card reveal">
-                <div class="feature-image">
-                    <div class="feature-image-inner">
-                        <div class="feature-screenshot affirmations-screenshot">
-                            <div class="affirmations-icon">💝</div>
-                            <div class="affirmations-card">
-                                <div class="affirmations-text">"You are worthy of love and kindness, especially from yourself."</div>
-                                <div class="affirmations-hearts">💕 💕 💕</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="feature-content">
-                    <h3><span>💝</span> Daily Affirmations</h3>
-                    <p>Start each day with positive words from Mochi. Uplifting quotes and gentle reminders that you're doing amazing.</p>
-                    <span class="feature-tag">🌸 New daily</span>
-                </div>
-            </div>
-            <div class="feature-card reveal">
-                <div class="feature-image">
-                    <div class="feature-image-inner">
-                        <div class="feature-screenshot habits-screenshot">
-                            <div class="habits-title">Today's Habits</div>
-                            <div class="habits-list">
-                                <div class="habit-item">
-                                    <div class="habit-check done">✓</div>
-                                    <span>Drink water</span>
-                                    <span class="habit-streak">🔥 7 days</span>
-                                </div>
-                                <div class="habit-item">
-                                    <div class="habit-check done">✓</div>
-                                    <span>Morning stretch</span>
-                                    <span class="habit-streak">🔥 5 days</span>
-                                </div>
-                                <div class="habit-item">
-                                    <div class="habit-check pending">○</div>
-                                    <span>Read 10 mins</span>
-                                    <span class="habit-streak">🔥 3 days</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="feature-content">
-                    <h3><span>✅</span> Habit Tracker</h3>
-                    <p>Build healthy routines one check at a time. Track streaks, celebrate wins, and watch your progress bloom.</p>
-                    <span class="feature-tag">🏆 Streaks & rewards</span>
-                </div>
-            </div>
-        </div>
-    </section>
+  <h3>2.6 Example: function approximation</h3>
+  <p>The basic application of neural networks is function approximation, or regression. Approximate
+     \(u(x)=\sin(4\pi x)\), \(x\in[0,1]\), by a neural network function \(u(x;W)\) found by optimisation.
+     Choose collocation points \(x_i = 0.01\times i\), \(i=0,1,\dots,100\). The unknowns are the weights \(W\), and the loss function is</p>
+  $$L(W)=\mathrm{MSE},\qquad \mathrm{MSE}=\frac1N\sum_{i=1}^{N}\Big(u(x_i;W)-u_{\mathrm{true}}(x_i)\Big)^2 .$$
+  <p>A standard optimiser is gradient descent, \(W_{\mathrm{new}}=W_{\mathrm{old}}-\eta\,\nabla L(W)\); a quasi-Newton alternative is the BFGS algorithm.
+     In the slides, BFGS gives a loss of \(3.80874\times10^{-6}\)
+     (<a href="https://drive.google.com/drive/folders/18K15aXY-yfMAsA7r5CjSrJVL5UssksYS?usp=sharing" target="_blank" rel="noopener">MATLAB code</a>).</p>
 
-    <!-- How It Works -->
-    <section class="how-it-works" id="how-it-works">
-        <div class="section-header reveal">
-            <div class="section-badge">
-                <span>🎯</span> Super simple
-            </div>
-            <h2>Start feeling better in 3 easy steps</h2>
-            <p>No complicated setup. Just download, open, and let Mochi guide you to a calmer you.</p>
+  <div class="demo">
+    <div class="demo-title">Approximating A sin(k&pi;x)</div>
+    <div class="demo-grid">
+      <div>
+        <div class="chart-box"><canvas id="fa-chart" aria-label="True function and network approximation"></canvas></div>
+        <p class="note" id="fa-stat"></p>
+      </div>
+      <div class="controls">
+        <div id="fa-controls"></div>
+        <div class="btn-row">
+          <button type="button" id="fa-train">Train more</button>
+          <button type="button" id="fa-reset">New initialisation</button>
         </div>
-        <div class="steps">
-            <div class="step reveal">
-                <div class="step-number">1</div>
-                <h3>Download & Meet Mochi</h3>
-                <p>Get the app for free and say hello to your new self-care buddy. Mochi is excited to meet you!</p>
-            </div>
-            <div class="step reveal">
-                <div class="step-number">2</div>
-                <h3>Check In Daily</h3>
-                <p>Spend just 2 minutes each day logging your mood and practicing a quick mindfulness exercise.</p>
-            </div>
-            <div class="step reveal">
-                <div class="step-number">3</div>
-                <h3>Watch Yourself Bloom</h3>
-                <p>Track your progress, unlock cute achievements, and see how small moments create big changes.</p>
-            </div>
-        </div>
-    </section>
+      </div>
+    </div>
+    <p class="note">
+      The neural network attempts to approximate the target function. The default \(A=1,\ k=4\) is the slides' \(\sin(4\pi x)\) with 101 points.
+      This demo uses one hidden layer of tanh neurons and the Levenberg&ndash;Marquardt algorithm. Changing a parameter restarts the training.
+      With very few points the network can match the points but not the function between them.
+    </p>
+  </div>
+  <p class="takeaway">Training means choosing the weights \(W\) that minimise the mismatch between the network and the target at the collocation points.</p>
+</section>
 
-    <!-- App Preview -->
-    <section class="app-preview" id="preview">
-        <div class="section-header reveal">
-            <div class="section-badge">
-                <span>📱</span> Sneak peek
-            </div>
-            <h2>A cozy space just for you</h2>
-            <p>Every screen is designed to bring you calm and joy. Take a look inside!</p>
-        </div>
-        <div class="preview-screens">
-            <div class="preview-phone reveal">
-                <div class="preview-screen preview-screen-1">
-                    <div class="preview-mini-mochi"></div>
-                    <div class="preview-text">Welcome back! 🌸</div>
-                </div>
-            </div>
-            <div class="preview-phone reveal">
-                <div class="preview-screen preview-screen-2">
-                    <div class="preview-text">Breathe in...</div>
-                    <div class="preview-breath-circle"></div>
-                    <div class="preview-text">...and relax 💫</div>
-                </div>
-            </div>
-            <div class="preview-phone reveal">
-                <div class="preview-screen preview-screen-3">
-                    <div class="preview-journal">
-                        <div class="preview-journal-date">Today, January 9</div>
-                        <div class="preview-journal-mood">🥰</div>
-                        <div class="preview-journal-text">Grateful for: Morning coffee, a good book, and cozy blankets...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<!-- ============================ 3. DIFFERENTIAL EQUATIONS ============================ -->
+<section id="differential-equations">
+  <h2>3. Differential Equations</h2>
 
-    <!-- Testimonials -->
-    <section class="testimonials" id="testimonials">
-        <div class="section-header reveal">
-            <div class="section-badge">
-                <span>💬</span> Love notes
-            </div>
-            <h2>What our community says</h2>
-            <p>Join thousands who've found their calm with Mochi Space.</p>
-        </div>
-        <div class="testimonials-grid">
-            <div class="testimonial-card reveal">
-                <div class="testimonial-avatar">👩‍🎨</div>
-                <p class="testimonial-text">"Mochi is the cutest thing ever! I look forward to my daily check-ins now. It's made mindfulness actually fun."</p>
-                <div class="testimonial-author">Sarah K.</div>
-                <div class="testimonial-role">Designer & Mom of 2</div>
-            </div>
-            <div class="testimonial-card reveal">
-                <div class="testimonial-avatar">👨‍💻</div>
-                <p class="testimonial-text">"As someone with anxiety, this app has been a game-changer. The breathing exercises help me calm down in minutes."</p>
-                <div class="testimonial-author">Marcus T.</div>
-                <div class="testimonial-role">Software Developer</div>
-            </div>
-            <div class="testimonial-card reveal">
-                <div class="testimonial-avatar">👩‍🎓</div>
-                <p class="testimonial-text">"I've tried so many wellness apps, but Mochi Space is the only one I've stuck with. It just feels like a warm hug!"</p>
-                <div class="testimonial-author">Emily R.</div>
-                <div class="testimonial-role">Graduate Student</div>
-            </div>
-        </div>
-    </section>
+  <h3>3.1 Examples</h3>
+  <p><strong>Ordinary differential equation (ODE).</strong> The one-dimensional Bratu equation:</p>
+  $$u_{xx}+Ce^{u}=0,\quad x\in[0,1],\qquad u(0)=0,\quad u(1)=0.$$
+  <p>The objective is to approximate the solution \(u(x)\) across the domain.</p>
+  <p><strong>Partial differential equation (PDE).</strong> The Burgers equation, in the form used by Raissi et al. (2019),</p>
+  $$u_t+u\,u_x-\frac{0.01}{\pi}\,u_{xx}=0 .$$
+  <p>The objective is to approximate the solution \(u(x,t)\) across the domain.</p>
 
-    <!-- Download CTA -->
-    <section class="download-cta" id="download">
-        <div class="cta-content reveal">
-            <div class="cta-mochi">
-                <div class="cta-mochi-mouth"></div>
-                <div class="cta-mochi-blush left"></div>
-                <div class="cta-mochi-blush right"></div>
-                <div class="cta-mochi-hand"></div>
-            </div>
-            <h2>Ready to find your Mochi Space?</h2>
-            <p>Download now and start your self-care journey with Mochi by your side. It's free, forever! 💕</p>
-            <div class="app-buttons">
-                <a href="#" class="app-btn">
-                    <span class="app-btn-icon">🍎</span>
-                    <div class="app-btn-text">
-                        <div class="app-btn-small">Download on the</div>
-                        <div class="app-btn-large">App Store</div>
-                    </div>
-                </a>
-                <a href="#" class="app-btn">
-                    <span class="app-btn-icon">🤖</span>
-                    <div class="app-btn-text">
-                        <div class="app-btn-small">Get it on</div>
-                        <div class="app-btn-large">Google Play</div>
-                    </div>
-                </a>
-            </div>
-        </div>
-    </section>
+  <h3>3.2 Common solvers</h3>
+  <table class="plain">
+    <thead><tr><th>Time-independent: \(u(x)\), \(u(x,y)\)</th><th>Time-dependent: \(u(x,t)\)</th></tr></thead>
+    <tbody><tr>
+      <td><ul><li>Finite difference method</li><li>Finite element method</li><li>Spectral method</li></ul></td>
+      <td><p class="tight">Time integration + spatial derivative/discretisation.</p>
+        <p class="tight"><em>Time integration:</em> Euler method, Runge&ndash;Kutta method, ode45 (MATLAB).</p>
+        <p class="tight"><em>Spatial discretisation:</em> finite difference, finite element, or spectral method.</p></td>
+    </tr></tbody>
+  </table>
 
-    <!-- Footer -->
-    <footer>
-        <div class="footer-wrapper">
-            <div class="footer-content">
-                <div class="footer-brand">
-                    <a href="#" class="logo">
-                        <div class="logo-blob"></div>
-                        Mochi Space
-                    </a>
-                    <p>Your cozy self-care companion. Building mindful habits, one moment at a time. Made with 💕 for people who deserve a little more calm in their lives.</p>
-                    <div class="footer-social">
-                        <a href="#" class="social-icon">📸</a>
-                        <a href="#" class="social-icon">🐦</a>
-                        <a href="#" class="social-icon">📘</a>
-                        <a href="#" class="social-icon">🎵</a>
-                    </div>
-                </div>
-                <div class="footer-column">
-                    <h4>Product</h4>
-                    <ul>
-                        <li><a href="#">Features</a></li>
-                        <li><a href="#">Pricing</a></li>
-                        <li><a href="#">Download</a></li>
-                        <li><a href="#">Updates</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h4>Company</h4>
-                    <ul>
-                        <li><a href="#">About Us</a></li>
-                        <li><a href="#">Careers</a></li>
-                        <li><a href="#">Press Kit</a></li>
-                        <li><a href="#">Contact</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h4>Support</h4>
-                    <ul>
-                        <li><a href="#">Help Center</a></li>
-                        <li><a href="#">Community</a></li>
-                        <li><a href="#">Privacy Policy</a></li>
-                        <li><a href="#">Terms of Service</a></li>
-                    </ul>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2026 Mochi Space. All rights reserved.</p>
-                <p>Designed by <a href="https://www.tooplate.com" rel="nofollow" target="_blank">Tooplate</a></p>
-            </div>
-        </div>
-    </footer>
+  <h3>3.3 Finite difference method</h3>
+  <p>Take the Bratu equation with \(C=2\). Its analytical solution is</p>
+  $$u(x)=-2\ln\!\left(\frac{\cosh\big(\theta(2x-1)\big)}{\cosh\theta}\right),\qquad \theta=\sqrt{C/8}\,\cosh\theta,$$
+  <p>which for \(C=2\) gives \(\theta\approx 0.589387763469351\).</p>
+  <p>To find the approximation \(u(x_k)=u_k\): divide \([0,1]\) into \(N=100\) subintervals with \(h=1/N\), take the grid points
+     \(x_k=0.01\times k\), \(k=1,\dots,99\), set \(u_0=0\), \(u_{100}=0\), and let \(u_k\), \(k=1,\dots,99\), be the unknowns.
+     Discretising the equation at each grid point,</p>
+  $$u_{xx}(x_k)+Ce^{u(x_k)}=0,\qquad k=1,\dots,99,$$
+  <p>and approximating \(u_{xx}\) with the central finite difference formula,</p>
+  $$u_{xx}(x_k)\approx\frac{u_{k+1}-2u_k+u_{k-1}}{h^2},$$
+  <p>gives a system of nonlinear equations</p>
+  $$\frac{u_{k+1}-2u_k+u_{k-1}}{h^2}+Ce^{u_k}=0,\qquad k=1,\dots,99.$$
+  <p>The slides solve it with the Levenberg&ndash;Marquardt algorithm
+     (<a href="https://drive.google.com/drive/folders/1giB0P19ZguI8yirOmMbZIHO70Pq_7zkr?usp=sharing" target="_blank" rel="noopener">MATLAB code</a>).
+     The demos below solve the same system with Newton's method, which is simpler for a tridiagonal Jacobian.</p>
 
-    <script src="tooplate-mochi-script.js"></script>
+  <div class="demo">
+    <div class="demo-title">Central difference at one grid point</div>
+    <div class="svg-wrap"><svg id="fd-svg" viewBox="0 0 640 260" role="img" aria-label="Three neighbouring grid points and the central difference"></svg></div>
+    <div class="demo-grid">
+      <div>
+        <div id="fd-result" class="result"></div>
+        <div id="fd-exact" class="note"></div>
+      </div>
+      <div class="controls">
+        <div id="fd-controls"></div>
+        <div class="btn-row">
+          <button type="button" id="fd-bratu">Use Bratu, C = 2</button>
+          <button type="button" id="fd-sine">Use sin(4&pi;x)</button>
+        </div>
+      </div>
+    </div>
+    <p class="note">The three points are drawn with the parabola through them; the finite difference formula equals the (constant) second derivative of that parabola.
+       The presets sample the exact function at the neighbours of \(x_k\) (\(x_k=0.5\) for Bratu, \(x_k=0.1\) for the sine) using the current \(h\), so you can watch the error shrink as \(h\) decreases.</p>
+  </div>
+
+  <h3>3.4 Interactive Bratu equation</h3>
+  <p>Change \(C\) and the number of subintervals \(N\). The numerical solution is the finite difference solution; the analytical solution is the formula above.
+     Both satisfy \(u(0)=u(1)=0\).</p>
+  <div class="demo">
+    <div class="demo-title">Bratu equation: u<sub>xx</sub> + C e<sup>u</sup> = 0</div>
+    <div class="demo-grid">
+      <div>
+        <div class="chart-box"><canvas id="br-chart" aria-label="Numerical and analytical solutions of the Bratu equation"></canvas></div>
+        <p class="note" id="br-info"></p>
+      </div>
+      <div class="controls" id="br-controls"></div>
+    </div>
+  </div>
+  <details>
+    <summary>Why is there a largest C?</summary>
+    <p>The condition \(\theta=\sqrt{C/8}\cosh\theta\) has two solutions for small \(C\) (two branches of the Bratu problem), one solution at a critical value \(C^*\approx 3.5138\), and none beyond it.
+       Newton's method started from \(u\equiv 0\) finds the lower branch, which is the one plotted here; for \(C>C^*\) the iteration diverges.</p>
+  </details>
+  <p class="takeaway">A classical solver needs a grid. The next part replaces the grid and the discretised equations by a neural network.</p>
+</section>
+
+<!-- ============================ 4. PINNs ============================ -->
+<section id="pinns">
+  <h2>4. Physics-Informed Neural Networks</h2>
+
+  <h3>4.1 Idea</h3>
+  <p>PINNs use a feedforward neural network to approximate the solution of a differential equation. For the Burgers equation the solution is approximated
+     by a continuous neural network function \(u(x,t;W)\) with, for example, two hidden layers. The unknowns are the weights \(W\).
+     The equation enters through the loss function. Select a stage to read what it does.</p>
+  <div class="demo">
+    <div class="demo-title">From input to loss</div>
+    <div class="flow" id="pf-flow">
+      <button type="button" class="stage active" data-i="0">Input</button><span class="arrow">&rarr;</span>
+      <button type="button" class="stage" data-i="1">Neural Network</button><span class="arrow">&rarr;</span>
+      <button type="button" class="stage" data-i="2">u(x,t)</button><span class="arrow">&rarr;</span>
+      <button type="button" class="stage" data-i="3">Derivatives</button><span class="arrow">&rarr;</span>
+      <button type="button" class="stage" data-i="4">PDE Residual</button><span class="arrow">&rarr;</span>
+      <button type="button" class="stage" data-i="5">Loss</button>
+    </div>
+    <p id="pf-desc" class="note"></p>
+  </div>
+
+  <h3>4.2 Collocation points</h3>
+  <p>Choose random or grid <em>interior</em> points \((x^{I}_i,t^{I}_i)\), \(i=1,\dots,N_i\), and random or grid <em>boundary/initial</em> points
+     \((x^{B}_i,t^{B}_i)\), \(i=1,\dots,N_b\). The graph shows the domain \(x\in[-1,1]\), \(t\in[0,1]\) used for the Burgers equation by Raissi et al. (2019).</p>
+  <div class="demo">
+    <div class="demo-title">Collocation points</div>
+    <div class="demo-grid">
+      <div>
+        <div class="chart-box tall"><canvas id="cp-chart" aria-label="Interior and boundary collocation points"></canvas></div>
+        <p class="note" id="cp-info"></p>
+      </div>
+      <div class="controls" id="cp-controls"></div>
+    </div>
+  </div>
+
+  <h3>4.3 Loss function</h3>
+  <p>The loss function is \(L(W)=\mathrm{MSE}_i+\mathrm{MSE}_b\). For the Burgers equation, the PDE residual at the interior points is</p>
+  $$\mathrm{MSE}_i=\frac1{N_i}\sum_{j=1}^{N_i}\Big(u_t+u\,u_x-\tfrac{0.01}{\pi}u_{xx}\Big)^2\Big|_{(x^I_j,\,t^I_j;\,W)},$$
+  <p>and the boundary/initial residual is</p>
+  $$\mathrm{MSE}_b=\frac1{N_b}\sum_{j=1}^{N_b}\Big(u(x^B_j,t^B_j;W)-u_{\mathrm{true}}(x^B_j,t^B_j)\Big)^2 .$$
+  <p>For the Bratu equation, with \(C=2\),</p>
+  $$\mathrm{MSE}_i=\frac1{N_i}\sum_{j=1}^{N_i}\Big(u_{xx}(x^I_j;W)+2e^{u(x^I_j;W)}\Big)^2,\qquad
+    \mathrm{MSE}_b=\frac1{N_b}\sum_{j=1}^{N_b}\Big(u(x^B_j;W)-0\Big)^2,$$
+  <p>and the loss can be weighted, \(L(W)=\mathrm{MSE}_i+\alpha\,\mathrm{MSE}_b\), where \(\alpha\) balances the two terms.</p>
+  <div class="demo">
+    <div class="demo-title">Total loss</div>
+    <div class="demo-grid">
+      <div>
+        <pre id="ls-result" class="result"></pre>
+        <div class="bar" id="ls-bar" aria-label="Share of interior and boundary terms in the total loss"><span class="bar-i"></span><span class="bar-b"></span></div>
+        <p class="note">Bar: share of the interior term (dark) and the weighted boundary term (light) in the total loss. \(\alpha=1\) is the unweighted loss \(\mathrm{MSE}_i+\mathrm{MSE}_b\).</p>
+      </div>
+      <div class="controls" id="ls-controls"></div>
+    </div>
+  </div>
+
+  <h3>4.4 Derivatives and automatic differentiation</h3>
+  <p>The loss needs \(u_x\), \(u_{xx}\) and \(u_t\) of the network output. Because the network is a composite function, they follow from the chain rule applied layer by layer; this is automatic differentiation.</p>
+<pre class="tree">u(x,t)
+ │
+ ├── ∂u/∂x
+ │      │
+ │      └── ∂²u/∂x²
+ │
+ └── ∂u/∂t</pre>
+  <p>For the first layer \(H_1=f(XW_1+B_1)\) with \(X=[x\;\;t]\) and \(Z_1=XW_1+B_1\), write \(w^{(x)}\) and \(w^{(t)}\) for the rows of \(W_1\) belonging to \(x\) and \(t\):</p>
+  $$\frac{\partial H_1}{\partial x}=f'(Z_1)\odot w^{(x)},\qquad
+    \frac{\partial H_1}{\partial t}=f'(Z_1)\odot w^{(t)},\qquad
+    \frac{\partial^2 H_1}{\partial x^2}=f''(Z_1)\odot\big(w^{(x)}\big)^2 .$$
+  <p>Later layers continue the chain, for example \(\partial H_2/\partial x=f'(Z_2)\odot\big(\partial H_1/\partial x\;W_2\big)\).
+     The demo uses a fixed network with one hidden layer, \(u(x)=\sum_j v_j f(a_jx+c_j)+d\) with \(f=\tanh\), so that</p>
+  $$u_x=\sum_j v_ja_j\,f'(z_j),\qquad u_{xx}=\sum_j v_ja_j^2\,f''(z_j),\qquad z_j=a_jx+c_j,\quad f''=-2f\,(1-f^2).$$
+  <div class="demo">
+    <div class="demo-title">u, u<sub>x</sub> and u<sub>xx</sub> of a fixed network</div>
+    <div class="demo-grid">
+      <div>
+        <div class="chart-box"><canvas id="ad-chart" aria-label="A network function and its first and second derivatives"></canvas></div>
+        <pre id="ad-result" class="result"></pre>
+      </div>
+      <div class="controls" id="ad-controls"></div>
+    </div>
+    <p class="note">The chain rule values are exact. The finite difference column uses \(h=0.01\) and is shown only for comparison.</p>
+  </div>
+
+  <h3>4.5 Architecture</h3>
+  <p>Inputs \((x,t)\) pass through the hidden layers to \(u(x,t)\). Differentiating the output gives the PDE residual, and the residual together with the boundary/initial mismatch gives the loss.
+     Only a few neurons per layer are drawn when a layer is wide.</p>
+  <div class="demo">
+    <div class="demo-title">PINN architecture</div>
+    <div class="svg-wrap"><svg id="ar-svg" role="img" aria-label="PINN architecture diagram"></svg></div>
+    <div class="flow center">
+      <span class="fbox">u(x,t)</span><span class="arrow">&rarr;</span>
+      <span class="fbox">Derivatives</span><span class="arrow">&rarr;</span>
+      <span class="fbox">PDE Residual</span><span class="arrow">&rarr;</span>
+      <span class="fbox">Loss</span>
+    </div>
+    <div class="controls inline" id="ar-controls"></div>
+    <p id="ar-info" class="note"></p>
+  </div>
+  <p class="takeaway">A PINN is an ordinary feedforward network; what makes it physics-informed is the loss, which contains the differential equation.</p>
+</section>
+
+<!-- ============================ 5. FORWARD PROBLEMS ============================ -->
+<section id="forward">
+  <h2>5. PINNs &mdash; Forward Problems</h2>
+  <p>In a forward problem the equation and its parameters are known, and the solution is unknown. The slides use the one-dimensional Bratu equation</p>
+  $$u_{xx}+Ce^{u}=0,\quad x\in[0,1],\qquad u(0)=0,\ u(1)=0,\qquad C=2 .$$
+  <p>Choose random interior points \(x^I_i\in[0,1]\) with \(N_i=99\), and two boundary points \(x^B_1=0\), \(x^B_2=1\) (\(N_b=2\)). The loss is</p>
+  $$L(W)=\mathrm{MSE}_i+\alpha\,\mathrm{MSE}_b,\qquad
+    \mathrm{MSE}_i=\frac1{N_i}\sum_{j}\Big(u_{xx}(x^I_j;W)+Ce^{u(x^I_j;W)}\Big)^2,\quad
+    \mathrm{MSE}_b=\frac1{N_b}\sum_{j}u(x^B_j;W)^2 ,$$
+  <p>minimised over \(W\) (BFGS in the slides; the slides report a loss of \(2.47038\times10^{-7}\),
+     <a href="https://drive.google.com/drive/folders/1pef0OeYg_jfmB1TA6YVU-v-q2-RxSIid?usp=sharing" target="_blank" rel="noopener">MATLAB code</a>).</p>
+
+  <div class="demo">
+    <div class="demo-title">Forward problem: a small PINN trained in your browser</div>
+    <div class="demo-grid">
+      <div>
+        <div class="chart-box"><canvas id="fw-chart" aria-label="PINN solution and analytical solution of the Bratu equation"></canvas></div>
+        <pre id="fw-stat" class="result"></pre>
+      </div>
+      <div class="controls">
+        <div id="fw-controls"></div>
+        <div class="btn-row">
+          <button type="button" id="fw-train">Train more</button>
+          <button type="button" id="fw-reset">New initialisation</button>
+        </div>
+      </div>
+    </div>
+    <p class="note">
+      This is a real PINN with one hidden layer of tanh neurons, trained by the Levenberg&ndash;Marquardt algorithm; \(u_{xx}\) is computed with the chain rule from section 4.4.
+      It is not the slides' code, so the loss values differ. Changing \(C\), \(\alpha\) or \(N_i\) continues training from the current weights; changing the number of neurons restarts it.
+      Without the boundary term (very small \(\alpha\)) the loss no longer fixes \(u(0)=u(1)=0\).
+    </p>
+  </div>
+  <p class="takeaway">The PINN finds the solution without a grid or a discretised equation: only the residual of the equation at sample points is minimised.</p>
+</section>
+
+<!-- ============================ 6. INVERSE PROBLEMS ============================ -->
+<section id="inverse">
+  <h2>6. PINNs &mdash; Inverse Problems</h2>
+  <p>The one-dimensional Bratu equation with unknown parameters \(\lambda=(\lambda_1,\lambda_2)\):</p>
+  $$u_{xx}+\lambda_1e^{\lambda_2u/2}=0,\quad x\in[0,1],\qquad u(0)=0,\ u(1)=0,$$
+  <p>with \(C=1\) and true values \(\lambda_1=1\), \(\lambda_2=2\). Given partial observations of the solution (data) \(\big(x_i,u(x_i)\big)\), \(i=1,\dots,N\),
+     and the known structure of the differential equation, the objective is to identify \(\lambda\) while simultaneously approximating the solution \(u\).</p>
+  <div class="demo">
+    <div class="demo-title">Inverse problem</div>
+    <div class="flow vertical-on-mobile">
+      <span class="fbox">Observed Data</span><span class="arrow">&rarr;</span>
+      <span class="fbox">Neural Network</span><span class="arrow">&rarr;</span>
+      <span class="fbox">u(x)</span><span class="arrow">&rarr;</span>
+      <span class="fbox">Differential Equation</span><span class="arrow">&rarr;</span>
+      <span class="fbox">Estimate &lambda;<sub>1</sub>, &lambda;<sub>2</sub></span>
+    </div>
+  </div>
+  <p>The loss function is \(L(W,\lambda_1,\lambda_2)=\mathrm{MSE}_{DE}+\mathrm{MSE}_{data}\), where</p>
+  $$\mathrm{MSE}_{DE}(W,\lambda_1,\lambda_2)=\frac1N\sum_{i=1}^{N}\Big(u_{xx}(x_i;W)+\lambda_1e^{\lambda_2u(x_i;W)/2}\Big)^2,\qquad
+    \mathrm{MSE}_{data}(W)=\frac1N\sum_{i=1}^{N}\Big(u(x_i;W)-u_{\mathrm{true}}(x_i)\Big)^2 .$$
+  <p>Equivalently, a least squares problem \(F=[F_{DE};F_{data}]\) with \(F_{DE}=u_{xx}(x_i;W)+\lambda_1e^{\lambda_2u(x_i;W)/2}\) and \(F_{data}=u(x_i;W)-u_{\mathrm{true}}(x_i)\),
+     solved by the Levenberg&ndash;Marquardt algorithm. The slides report a loss of \(9.1483\times10^{-8}\)
+     (<a href="https://drive.google.com/drive/folders/1YXK4LGDOIZXHySQcR1KUDkgd4Wu6tBga?usp=sharing" target="_blank" rel="noopener">MATLAB code</a>).</p>
+
+  <h3>6.1 Interactive parameter estimation</h3>
+  <p>Set the true \(\lambda_1,\lambda_2\); the true solution and the observations are regenerated. Then press <em>Estimate</em>: a small PINN is trained on the observations,
+     starting from the initial guess, and \(\lambda_1,\lambda_2\) are updated together with the network weights.</p>
+  <div class="demo">
+    <div class="demo-title">Parameter estimation</div>
+    <div class="demo-grid">
+      <div>
+        <div class="chart-box"><canvas id="iv-chart" aria-label="True solution, observations and estimated solution"></canvas></div>
+        <table class="size-table" id="iv-table">
+          <thead><tr><th></th><th>True</th><th>Estimated</th><th>Relative error</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p class="note" id="iv-stat"></p>
+      </div>
+      <div class="controls">
+        <div id="iv-controls"></div>
+        <div class="btn-row">
+          <button type="button" id="iv-run">Estimate</button>
+          <button type="button" id="iv-reset">Reset</button>
+        </div>
+      </div>
+    </div>
+    <p class="note">
+      As in the slides, the equation residual is evaluated at the data points. With \(v=\lambda_2u/2\) the equation becomes the Bratu equation with \(C=\lambda_1\lambda_2/2\), so a solution exists only when \(\lambda_1\lambda_2/2\le C^*\approx3.51\).
+      Measurement noise makes \(\lambda_2\) noticeably harder to recover than \(\lambda_1\). This is a small browser implementation, not the slides' MATLAB code.
+    </p>
+  </div>
+  <p class="takeaway">In an inverse problem the same loss is minimised, but the equation's parameters are added to the unknowns.</p>
+</section>
+
+<!-- ============================ 7. ADVANTAGES ============================ -->
+<section id="advantages">
+  <h2>7. Advantages of PINNs</h2>
+  <ul class="adv">
+    <li><details open><summary>Mesh (or grid)-free</summary>
+      <p>Collocation points can be random; no grid or mesh has to be built (compare the finite difference method in section 3.3).</p></details></li>
+    <li><details><summary>Efficient inverse problems (or parameter estimation)</summary>
+      <p>Equation parameters are simply added to the unknowns of the same loss function (section 6).</p></details></li>
+    <li><details><summary>Automatic differentiation</summary>
+      <p>Derivatives of the network output such as \(u_x\), \(u_{xx}\), \(u_t\) are obtained exactly by the chain rule (section 4.4), without finite difference formulas.</p></details></li>
+    <li><details><summary>Unified framework: ODEs, 2D PDEs, 3D PDEs</summary>
+      <p>The same recipe applies to all of them: network, derivatives, residual, loss. Only the inputs and the residual change.</p></details></li>
+    <li><details><summary>Hard constraint</summary>
+      <p>The initial and boundary conditions can be enforced directly in the network structure instead of through a loss term.
+         For example (an illustration, not from the slides), for \(u(0)=u(1)=0\) one can use \(u(x)=x(1-x)\,\mathcal N(x;W)\), which satisfies the boundary conditions for any weights, so \(\mathrm{MSE}_b\) is not needed.</p></details></li>
+  </ul>
+</section>
+
+<!-- ============================ 8. REFERENCES ============================ -->
+<section id="references">
+  <h2>8. References</h2>
+  <ul class="refs">
+    <li>Raissi, M., Perdikaris, P., &amp; Karniadakis, G. E. (2019). Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations. <em>Journal of Computational Physics</em>, 378, 686&ndash;707.</li>
+    <li>Shahab, M. L., Mukhlash, I., &amp; Susanto, H. (2026). Do physics-informed neural networks (PINNs) need to be deep? Shallow PINNs using the Levenberg&ndash;Marquardt algorithm. <em>arXiv preprint</em> arXiv:2602.08515.</li>
+    <li>Shahab, M. L., Susanto, H., &amp; Hatzikirou, H. (2025). A finite difference method with symmetry properties for the high-dimensional Bratu equation. <em>Applied Mathematics and Computation</em>, 489.</li>
+    <li>Shahab, M. L., &amp; Susanto, H. (2024). Neural networks for bifurcation and linear stability analysis of steady states in partial differential equations. <em>Applied Mathematics and Computation</em>, 483.</li>
+    <li>Burden, R. L., Faires, J. D., &amp; Burden, A. M. <em>Numerical Analysis</em>.</li>
+    <li>Chong, E. K. P., &amp; &Zdot;ak, S. H. <em>An Introduction to Optimization</em>.</li>
+  </ul>
+
+  <h3>Notes on this page</h3>
+  <ul class="notes-list">
+    <li>The slides' text was read from the PDF; figures and formulas that are images in the slides were not available as text. The analytical Bratu solution is written in the form above and reproduces the slides' value \(\theta\approx0.589387763469351\) for \(C=2\).</li>
+    <li>The Burgers equation, its viscosity \(0.01/\pi\), and the domain \(x\in[-1,1]\), \(t\in[0,1]\) follow Raissi et al. (2019); check them against the slide figure.</li>
+    <li>The text extracted from the slides stops inside the Shahab, Susanto &amp; Hatzikirou (2025) entry. That title, and the 2024 entry (only authors and year are listed in the outline), were matched from public journal and arXiv records. The Burden et al. and Chong &amp; &Zdot;ak entries give only author and title; edition and publisher are not in the slides. Please check the list against the original slide.</li>
+    <li>Browser demos use Levenberg&ndash;Marquardt with a numerical Jacobian and Newton's method for the finite difference system; the slides use BFGS or Levenberg&ndash;Marquardt in MATLAB.</li>
+  </ul>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">Interactive notes based on the slides &ldquo;Mathematics Behind Physics-Informed Neural Networks (PINNs)&rdquo; by Muhammad Luthfi Shahab, ILMS 2026.</div>
+</footer>
+
 </body>
 </html>
