@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mathematics Behind Physics-Informed Neural Networks (PINNs)</title>
   <meta name="description" content="Interactive lecture notes: feedforward neural networks, differential equations, and physics-informed neural networks.">
+  <script>document.documentElement.classList.add("js");</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -13,11 +14,12 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script defer src="assets/lang-id.js"></script>
   <script defer src="script.js"></script>
 </head>
 <body>
 
-<!-- Neuro, the page guide: one body, three expressions. Drawn as SVG. -->
+<!-- Neuro, the page guide: one body, three expressions. Drawn as SVG; no images are loaded. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <g id="neuro-body">
@@ -44,7 +46,6 @@
 <nav id="navbar">
   <div class="nav-inner">
     <a href="#top" class="brand">PINNs</a>
-    <button id="menu-btn" aria-expanded="false" aria-controls="nav-links">Menu</button>
     <ul id="nav-links">
       <li><a href="#big-idea">Big Idea</a></li>
       <li><a href="#introduction">Introduction</a></li>
@@ -56,6 +57,11 @@
       <li><a href="#advantages">Advantages</a></li>
       <li><a href="#references">References</a></li>
     </ul>
+    <div class="lang-switch no-i18n" role="group" aria-label="Language">
+      <button type="button" data-lang="en" class="on" aria-pressed="true">EN</button>
+      <button type="button" data-lang="id" aria-pressed="false">ID</button>
+    </div>
+    <button id="menu-btn" aria-expanded="false" aria-controls="nav-links">Menu</button>
   </div>
 </nav>
 
@@ -68,8 +74,7 @@
     <div class="hero-text">
       <h1>Mathematics Behind Physics-Informed Neural Networks</h1>
       <p class="subtitle">Understanding the mathematics behind neural networks, differential equations, and PINNs.</p>
-      <p class="byline">Web Developer   : Ichsan Ali Darmawan<br>
-      <p class="byline">Author Content  : Muhammad Luthfi Shahab<br>
+      <p class="byline">Muhammad Luthfi Shahab<br>
         International Lecture Series in Mathematics &amp; Statistics (ILMS 2026)<br>
         <span class="muted">Mathematics and Statistics for a Sustainable and Data-Driven ASEAN Future &middot; 24 September 2026</span></p>
       <p><a class="start-link" href="#big-idea">New to this? Start with the big idea</a></p>
@@ -564,7 +569,7 @@
 <!-- ============================ 8. REFERENCES ============================ -->
 <section id="references">
   <h2>8. References</h2>
-  <ul class="refs">
+  <ul class="refs no-i18n">
     <li>Raissi, M., Perdikaris, P., &amp; Karniadakis, G. E. (2019). Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations. <em>Journal of Computational Physics</em>, 378, 686&ndash;707.</li>
     <li>Shahab, M. L., Mukhlash, I., &amp; Susanto, H. (2026). Do physics-informed neural networks (PINNs) need to be deep? Shallow PINNs using the Levenberg&ndash;Marquardt algorithm. <em>arXiv preprint</em> arXiv:2602.08515.</li>
     <li>Shahab, M. L., Susanto, H., &amp; Hatzikirou, H. (2025). A finite difference method with symmetry properties for the high-dimensional Bratu equation. <em>Applied Mathematics and Computation</em>, 489.</li>

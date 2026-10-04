@@ -220,6 +220,104 @@ function inverseExact(l1, l2, x) {
 }
 
 /* =========================================================
+   PART 1b - LANGUAGE (English / Indonesian)
+   English is the source text. Indonesian comes from the hand-written table
+   window.LANG_ID in assets/lang-id.js: { "English text": "Teks Indonesia" }.
+   - Static page text: each leaf block is captured once, keyed by its English HTML.
+   - Text made by JavaScript: tr('English') and trf('English with {0}', value).
+   A missing entry falls back to English and is listed in I18N.missing.
+   ========================================================= */
+
+const I18N = { lang: 'en', hosts: [], attrs: [], missing: [] };
+const LANG_HOOKS = [];
+const onLang = (fn) => LANG_HOOKS.push(fn);
+const LANG_STORE = 'pinn-notes-lang';
+
+/* Blocks that carry translatable text. Only leaf blocks (no nested block) are used. */
+const I18N_BLOCKS = 'h1, h3, p, li, dt, dd, summary, th, td, button, .demo-title, .h2t, .fbox, #nav-links a, .takeaway > span, footer .wrap';
+const NEUTRAL_KEY = /^[^A-Za-z]*([A-Za-z]{1,2}([^A-Za-z]+|$))*$/;     // symbols only, e.g. "x", "u(x)", "C"
+
+function tr(key) {
+  if (I18N.lang !== 'id') return key;
+  const table = (typeof window !== 'undefined' && window.LANG_ID) || {};
+  const v = table[key];
+  if (v === undefined) {
+    if (!NEUTRAL_KEY.test(key) && I18N.missing.indexOf(key) < 0) I18N.missing.push(key);
+    return key;
+  }
+  return v;
+}
+
+/* Translate a template and fill {0}, {1}, ... */
+function trf(key) {
+  let s = tr(key);
+  for (let i = 1; i < arguments.length; i++) s = s.split('{' + (i - 1) + '}').join(String(arguments[i]));
+  return s;
+}
+
+/* Remember the English HTML of every leaf block, before anything else touches it. */
+function i18nCapture() {
+  document.querySelectorAll(I18N_BLOCKS).forEach((el) => {
+    if (el.closest('.no-i18n')) return;
+    if (el.querySelector(I18N_BLOCKS)) return;
+    if (!el.textContent.trim()) return;
+    I18N.hosts.push({ el, raw: el.innerHTML, key: el.innerHTML.replace(/\s+/g, ' ').trim(), cur: el.innerHTML });
+  });
+  document.querySelectorAll('[aria-label]').forEach((el) => {
+    if (!el.closest('.no-i18n')) I18N.attrs.push({ el, raw: el.getAttribute('aria-label') });
+  });
+}
+
+/* Swap the static text to the chosen language; render math only when asked (runtime switch). */
+function i18nApply(lang, renderMath) {
+  const table = (typeof window !== 'undefined' && window.LANG_ID) || {};
+  I18N.hosts.forEach((h) => {
+    const t = lang === 'id' ? table[h.key] : undefined;
+    if (lang === 'id' && t === undefined && I18N.missing.indexOf(h.key) < 0) I18N.missing.push(h.key);
+    const html = t !== undefined ? t : h.raw;
+    if (html !== h.cur) {
+      h.el.innerHTML = html;
+      h.cur = html;
+      if (renderMath) renderAuto(h.el);
+    }
+  });
+  I18N.attrs.forEach((a) => {
+    const t = lang === 'id' ? table[a.raw] : undefined;
+    a.el.setAttribute('aria-label', t !== undefined ? t : a.raw);
+  });
+}
+
+function setLang(lang, initial) {
+  I18N.lang = lang;
+  try { localStorage.setItem(LANG_STORE, lang); } catch (e) { /* storage may be blocked */ }
+  document.documentElement.lang = lang;
+  i18nApply(lang, !initial);
+  document.title = tr('Mathematics Behind Physics-Informed Neural Networks (PINNs)');
+  const meta = document.querySelector('meta[name="description"]');
+  if (meta) meta.setAttribute('content', tr('Interactive lecture notes: feedforward neural networks, differential equations, and physics-informed neural networks.'));
+  document.querySelectorAll('.lang-switch button').forEach((b) => {
+    const on = b.dataset.lang === lang;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+  if (!initial) LANG_HOOKS.forEach((fn) => fn());
+}
+
+function i18nInit() {
+  i18nCapture();
+  let lang = 'en';
+  try { lang = localStorage.getItem(LANG_STORE) === 'id' ? 'id' : 'en'; } catch (e) { lang = 'en'; }
+  if (typeof window !== 'undefined' && !window.LANG_ID) {      // no translation table loaded: hide the switch
+    lang = 'en';
+    document.querySelectorAll('.lang-switch').forEach((el) => { el.hidden = true; });
+  }
+  document.querySelectorAll('.lang-switch button').forEach((b) => {
+    b.addEventListener('click', () => { if (b.dataset.lang !== I18N.lang) setLang(b.dataset.lang, false); });
+  });
+  setLang(lang, true);
+}
+
+/* =========================================================
    PART 2 - SMALL HELPERS (formatting, controls, charts, trainer)
    ========================================================= */
 
@@ -284,7 +382,7 @@ function onceVisible(el, fn) {
 function libWarning(text) {
   const d = document.createElement('div');
   d.className = 'takeaway';
-  d.textContent = text;
+  d.textContent = tr(text);
   document.querySelector('main').prepend(d);
 }
 
@@ -298,7 +396,9 @@ function addControl(parentId, o) {
   const fire = (v) => { if (o.onChange) o.onChange(v); };
 
   if (o.type === 'check') {
-    wrap.innerHTML = '<label><input type="checkbox" id="' + o.id + '"><span>' + o.label + '</span></label>';
+    wrap.innerHTML = '<label><input type="checkbox" id="' + o.id + '"><span>' + tr(o.label) + '</span></label>';
+    const lab = wrap.querySelector('span');
+    onLang(() => { lab.innerHTML = tr(o.label); });
     const box = $(o.id);
     box.checked = !!o.value;
     box.addEventListener('input', () => fire(box.checked));
@@ -306,9 +406,14 @@ function addControl(parentId, o) {
   }
 
   if (o.type === 'select') {
-    wrap.innerHTML = '<label for="' + o.id + '">' + o.label + '</label><select id="' + o.id + '">' +
-      o.options.map((op) => '<option value="' + op.value + '">' + op.label + '</option>').join('') + '</select>';
+    wrap.innerHTML = '<label for="' + o.id + '">' + tr(o.label) + '</label><select id="' + o.id + '">' +
+      o.options.map((op) => '<option value="' + op.value + '">' + tr(op.label) + '</option>').join('') + '</select>';
     const sel = $(o.id);
+    const selLab = wrap.querySelector('label');
+    onLang(() => {
+      selLab.innerHTML = tr(o.label);
+      o.options.forEach((op, i) => { sel.options[i].textContent = tr(op.label); });
+    });
     sel.value = o.value;
     sel.addEventListener('input', () => fire(sel.value));
     return { get: () => sel.value, set: (v, silent) => { sel.value = v; if (!silent) fire(sel.value); } };
@@ -317,10 +422,12 @@ function addControl(parentId, o) {
   const hasRange = o.type === 'slider';
   const hardMin = o.hardMin !== undefined ? o.hardMin : o.min;
   const hardMax = o.hardMax !== undefined ? o.hardMax : o.max;
-  wrap.innerHTML = '<label for="' + o.id + '">' + o.label + '</label><div class="ctl-row">' +
+  wrap.innerHTML = '<label for="' + o.id + '">' + tr(o.label) + '</label><div class="ctl-row">' +
     (hasRange ? '<input type="range" id="' + o.id + '-r">' : '') +
     '<input type="number" id="' + o.id + '" step="any"></div>';
   const numEl = $(o.id), rangeEl = hasRange ? $(o.id + '-r') : null;
+  const numLab = wrap.querySelector('label');
+  onLang(() => { numLab.innerHTML = tr(o.label); });
   let val = o.value;
 
   if (hasRange) {
@@ -367,11 +474,11 @@ function newChart(canvasId, xTitle, yTitle, scales) {
   scales = scales || {};
   const axis = (title, extra) => Object.assign({
     type: 'linear',
-    title: { display: true, text: title, color: '#444' },
+    title: { display: true, text: tr(title), color: '#444' },
     grid: { color: COLOR.grid },
     ticks: { color: '#555', maxTicksLimit: 8 }
   }, extra || {});
-  return new Chart($(canvasId), {
+  const chart = new Chart($(canvasId), {
     type: 'scatter',
     data: { datasets: [] },
     options: {
@@ -390,6 +497,12 @@ function newChart(canvasId, xTitle, yTitle, scales) {
       scales: { x: axis(xTitle, scales.x), y: axis(yTitle, scales.y) }
     }
   });
+  onLang(() => {
+    chart.options.scales.x.title.text = tr(xTitle);
+    chart.options.scales.y.title.text = tr(yTitle);
+    chart.update('none');
+  });
+  return chart;
 }
 
 function setChart(chart, datasets) {
@@ -510,8 +623,8 @@ function initComposite() {
     setChart(chart, [
       lineSet('g(x) = ' + g.name, gCurve, COLOR.dark, { borderDash: [6, 4], borderWidth: 1.5 }),
       lineSet('f(g(x))', fgCurve, COLOR.accent),
-      dotSet('g(x) at chosen x', [{ x, y: gx }], COLOR.dark, { pointStyle: 'rectRot', pointRadius: 5, backgroundColor: '#fff' }),
-      dotSet('y = f(g(x)) at chosen x', [{ x, y }], COLOR.warm, { pointRadius: 5 })
+      dotSet(tr('g(x) at chosen x'), [{ x, y: gx }], COLOR.dark, { pointStyle: 'rectRot', pointRadius: 5, backgroundColor: '#fff' }),
+      dotSet(tr('y = f(g(x)) at chosen x'), [{ x, y }], COLOR.warm, { pointRadius: 5 })
     ]);
   }
 
@@ -519,6 +632,7 @@ function initComposite() {
   cf = addControl('cf-controls', { type: 'select', id: 'cf-f', label: 'Outer function f(x)', options: opts, value: 'sq', onChange: update });
   cx = addControl('cf-controls', { type: 'slider', id: 'cf-x', label: 'x', min: -3, max: 3, step: 0.1, hardMin: -100, hardMax: 100, value: 2, onChange: update });
   update();
+  onLang(update);
 }
 
 /* ---------- 2.3 network + layer-wise calculator, 2.4 matrix form ---------- */
@@ -582,9 +696,9 @@ function drawNetwork(r) {
     node('h1', 'h₁', '= ' + num(r.h1, 4), 'b₁ = ' + num(s.b1, 3)) +
     node('h2', 'h₂', '= ' + num(r.h2, 4), 'b₂ = ' + num(s.b2, 3)) +
     node('y', 'y', '= ' + num(r.y, 4), 'b₃ = ' + num(s.b3, 3)) +
-    '<text x="70" y="30" text-anchor="middle" style="fill:#5f6368">input</text>' +
-    '<text x="300" y="30" text-anchor="middle" style="fill:#5f6368">hidden layer</text>' +
-    '<text x="540" y="30" text-anchor="middle" style="fill:#5f6368">output</text>';
+    '<text x="70" y="30" text-anchor="middle" style="fill:#5f6368">' + tr('input') + '</text>' +
+    '<text x="300" y="30" text-anchor="middle" style="fill:#5f6368">' + tr('hidden layer') + '</text>' +
+    '<text x="540" y="30" text-anchor="middle" style="fill:#5f6368">' + tr('output') + '</text>';
 }
 
 function updateNetwork() {
@@ -606,10 +720,10 @@ function updateNetwork() {
   box.innerHTML = lines.map(() => '<div class="step"></div>').join('');
   lines.forEach((l, i) => tex(box.children[i], l));
   box.lastElementChild.classList.add('step-final');
-  box.insertAdjacentHTML('afterbegin', '<div class="step note">Step by step (values rounded to 4 decimals):</div>');
+  box.insertAdjacentHTML('afterbegin', '<div class="step note">' + tr('Step by step (values rounded to 4 decimals):') + '</div>');
 
   const note = $('nn-act-note');
-  note.innerHTML = 'Activation: <span></span>' + (applyOut ? '' : ' (not applied at the output)');
+  note.innerHTML = tr('Activation:') + ' <span></span>' + (applyOut ? '' : ' ' + tr('(not applied at the output)'));
   tex(note.querySelector('span'), ACT_DEF[act]);
 
   updateMatrix(r, act, applyOut);
@@ -632,13 +746,13 @@ function updateMatrix(rScalar, act, applyOut) {
   const Y = applyOut ? Z2.map((row) => row.map(f)) : Z2;
 
   const stages = [
-    ['Input matrix \\(X\\)', 'X=' + matTex(X)],
+    [tr('Input matrix \\(X\\)'), 'X=' + matTex(X)],
     ['\\(\\times\\, W_1\\)', 'XW_1=' + matTex(X) + matTex(W1) + '=' + matTex(XW1)],
     ['\\(+\\, B_1\\)', 'Z_1=XW_1+B_1=' + matTex(XW1) + '+' + matTex(B1) + '=' + matTex(Z1)],
-    ['Activation \\(f\\)', 'H_1=f(Z_1)=' + matTex(H1)],
-    ['Hidden layer \\(H_1\\), \\(\\times\\, W_2\\)', 'H_1W_2=' + matTex(H1) + matTex(W2) + '=' + matTex(H1W2)],
+    [tr('Activation \\(f\\)'), 'H_1=f(Z_1)=' + matTex(H1)],
+    [tr('Hidden layer \\(H_1\\), \\(\\times\\, W_2\\)'), 'H_1W_2=' + matTex(H1) + matTex(W2) + '=' + matTex(H1W2)],
     ['\\(+\\, B_2\\)', 'Z_2=H_1W_2+B_2=' + matTex(H1W2) + '+' + matTex(B2) + '=' + matTex(Z2)],
-    [applyOut ? 'Activation \\(f\\), output' : 'Output', 'y=' + (applyOut ? 'f(Z_2)=' : 'Z_2=') + matTex(Y)]
+    [tr(applyOut ? 'Activation \\(f\\), output' : 'Output'), 'y=' + (applyOut ? 'f(Z_2)=' : 'Z_2=') + matTex(Y)]
   ];
   const box = $('mx-stages');
   box.innerHTML = stages.map((st) => '<div class="stage-row"><div class="stage-name">' + st[0] + '</div><div class="stage-tex"></div></div>').join('');
@@ -648,8 +762,9 @@ function updateMatrix(rScalar, act, applyOut) {
   });
 
   const diff = Math.abs(Y[0][0] - rScalar.y);
-  $('mx-check').textContent = 'Check: matrix form gives y = ' + num(Y[0][0], 6) + ', the scalar form of section 2.3 gives y = ' +
-    num(rScalar.y, 6) + (diff < 1e-12 ? ' (identical).' : ' (difference ' + diff.toExponential(2) + ').');
+  $('mx-check').textContent = diff < 1e-12
+    ? trf('Check: matrix form gives y = {0}, the scalar form of section 2.3 gives y = {1} (identical).', num(Y[0][0], 6), num(rScalar.y, 6))
+    : trf('Check: matrix form gives y = {0}, the scalar form of section 2.3 gives y = {1} (difference {2}).', num(Y[0][0], 6), num(rScalar.y, 6), diff.toExponential(2));
 }
 
 function initNetwork() {
@@ -683,6 +798,7 @@ function initNetwork() {
     setAll(v);
   });
   updateNetwork();
+  onLang(updateNetwork);
 }
 
 /* ---------- 2.5 more hidden layers: sizes of W_k and B_k ---------- */
@@ -695,10 +811,10 @@ function initDeepSizes() {
       const a = k === 1 ? nin : H, b = k === L + 1 ? nout : H;
       const p = a * b + b;
       total += p;
-      rows += '<tr><td>' + k + (k === L + 1 ? ' (output)' : '') + '</td><td>' + a + ' × ' + b + '</td><td>1 × ' + b + '</td><td>' + p + '</td></tr>';
+      rows += '<tr><td>' + k + (k === L + 1 ? ' ' + tr('(output)') : '') + '</td><td>' + a + ' × ' + b + '</td><td>1 × ' + b + '</td><td>' + p + '</td></tr>';
     }
     document.querySelector('#ds-table tbody').innerHTML = rows;
-    $('ds-total').textContent = 'Total: ' + total + ' trainable parameters (weights and biases).';
+    $('ds-total').textContent = trf('Total: {0} trainable parameters (weights and biases).', total);
   }
   const mk = (id, label, min, max, v) => addControl('ds-controls', { type: 'slider', id, label, min, max, step: 1, value: v, onChange: update });
   cin = mk('ds-in', 'Inputs', 1, 10, 2);
@@ -706,6 +822,7 @@ function initDeepSizes() {
   ch = mk('ds-H', 'Nodes per hidden layer', 1, 100, 20);
   cout = mk('ds-out', 'Outputs', 1, 5, 1);
   update();
+  onLang(update);
 }
 
 /* ---------- 2.6 function approximation ---------- */
@@ -722,16 +839,16 @@ function initApprox() {
     const curveNet = sampleFn((x) => netU(p, H, x), 0, 1, 200);
     const pts = FA.xs.map((x) => ({ x, y: target(x) }));
     const sets = [];
-    if (cTrue.get()) sets.push(lineSet('True function', curveTrue, COLOR.dark, { borderWidth: 2.5 }));
-    if (cNet.get()) sets.push(lineSet('Network approximation', curveNet, COLOR.accent));
-    sets.push(dotSet('Collocation points', pts, COLOR.warm, { pointRadius: pts.length > 80 ? 2 : 3.5 }));
+    if (cTrue.get()) sets.push(lineSet(tr('True function'), curveTrue, COLOR.dark, { borderWidth: 2.5 }));
+    if (cNet.get()) sets.push(lineSet(tr('Network approximation'), curveNet, COLOR.accent));
+    sets.push(dotSet(tr('Collocation points'), pts, COLOR.warm, { pointRadius: pts.length > 80 ? 2 : 3.5 }));
     setChart(chart, sets);
   }
 
   function stat(iters) {
     const cost = sumSq(FA.res(FA.lm.p));
-    $('fa-stat').textContent = 'Iterations: ' + iters + '  |  loss (MSE at the ' + FA.xs.length + ' points): ' + cost.toExponential(3) +
-      '  |  slides (BFGS, 101 points): 3.80874e-06';
+    $('fa-stat').textContent = trf('Iterations: {0}  |  loss (MSE at the {1} points): {2}  |  slides (BFGS, 101 points): 3.80874e-06',
+      iters, FA.xs.length, cost.toExponential(3));
   }
 
   function setup(reinit) {
@@ -770,6 +887,7 @@ function initApprox() {
   $('fa-reset').addEventListener('click', () => { FA.seed += 1; setup(true); train(150); });
 
   setup(true);
+  onLang(() => { draw(); stat(FA.base); });
   onceVisible($('fa-chart'), () => train(150));
 }
 
@@ -831,9 +949,9 @@ function initFiniteDifference() {
     if (FD.preset) {
       const P = PRESETS[FD.preset];
       const e = P.exact(P.xk, u0);
-      ex.textContent = P.label + ' = ' + sig(e, 6) + ';  error of the finite difference = ' + sig(val - e, 3) + '.';
+      ex.textContent = trf('{0} = {1};  error of the finite difference = {2}.', tr(P.label), sig(e, 6), sig(val - e, 3));
     } else {
-      ex.textContent = 'Values entered by hand; choose a preset to compare with an exact second derivative.';
+      ex.textContent = tr('Values entered by hand; choose a preset to compare with an exact second derivative.');
     }
   }
 
@@ -849,6 +967,7 @@ function initFiniteDifference() {
   $('fd-bratu').addEventListener('click', () => applyPreset('bratu'));
   $('fd-sine').addEventListener('click', () => applyPreset('sine'));
   applyPreset('bratu');
+  onLang(update);
 }
 
 /* ---------- 3.4 interactive Bratu equation ---------- */
@@ -865,23 +984,23 @@ function initBratu() {
     const info = [];
 
     if (th !== null && cAna.get()) {
-      sets.push(lineSet('Analytical', sampleFn((x) => bratuExact(C, x), 0, 1, 200), COLOR.dark, { borderWidth: 3, borderColor: '#9aa0a6', backgroundColor: '#9aa0a6' }));
+      sets.push(lineSet(tr('Analytical'), sampleFn((x) => bratuExact(C, x), 0, 1, 200), COLOR.dark, { borderWidth: 3, borderColor: '#9aa0a6', backgroundColor: '#9aa0a6' }));
     }
     if (fdm.converged && cNum.get()) {
-      sets.push(lineSet('Numerical', fdm.x.map((x, i) => ({ x, y: fdm.u[i] })), COLOR.accent, { borderWidth: 1.5, pointRadius: N <= 50 ? 3 : 0 }));
+      sets.push(lineSet(tr('Numerical'), fdm.x.map((x, i) => ({ x, y: fdm.u[i] })), COLOR.accent, { borderWidth: 1.5, pointRadius: N <= 50 ? 3 : 0 }));
     }
-    sets.push(dotSet('Boundary conditions u(0) = u(1) = 0', [{ x: 0, y: 0 }, { x: 1, y: 0 }], '#222', { pointStyle: 'rectRot', pointRadius: 6, backgroundColor: '#fff' }));
+    sets.push(dotSet(tr('Boundary conditions u(0) = u(1) = 0'), [{ x: 0, y: 0 }, { x: 1, y: 0 }], '#222', { pointStyle: 'rectRot', pointRadius: 6, backgroundColor: '#fff' }));
     setChart(chart, sets);
 
     info.push('h = 1/N = ' + sig(1 / N, 4) + ', C* ≈ ' + num(CSTAR, 4));
     if (th === null) {
-      info.push('No solution exists for C > C*: the analytical formula has no real θ and Newton\'s method does not converge');
+      info.push(tr('No solution exists for C > C*: the analytical formula has no real θ and Newton\'s method does not converge'));
     } else {
       info.push('θ = ' + num(th, 12) + ', u(1/2) = ' + num(bratuExact(C, 0.5), 6));
       if (fdm.converged) {
         let err = 0;
         fdm.x.forEach((x, i) => { err = Math.max(err, Math.abs(fdm.u[i] - bratuExact(C, x))); });
-        info.push('max |numerical − analytical| at the grid points = ' + err.toExponential(2));
+        info.push(trf('max |numerical − analytical| at the grid points = {0}', err.toExponential(2)));
       }
     }
     $('br-info').textContent = info.join('. ') + '.';
@@ -892,6 +1011,7 @@ function initBratu() {
   cAna = addControl('br-controls', { type: 'check', id: 'br-ana', label: 'Show analytical solution', value: true, onChange: update });
   cNum = addControl('br-controls', { type: 'check', id: 'br-num', label: 'Show numerical solution', value: true, onChange: update });
   update();
+  onLang(update);
 }
 
 /* ---------- 4.1 PINN pipeline ---------- */
@@ -905,13 +1025,16 @@ function initPipeline() {
     'Loss: \\(L(W)=\\mathrm{MSE}_i+\\mathrm{MSE}_b\\), the mean squared PDE residual plus the mean squared boundary/initial residual. Training minimises it over \\(W\\).'
   ];
   const buttons = Array.from(document.querySelectorAll('#pf-flow .stage'));
+  let cur = 0;
   function select(i) {
+    cur = i;
     buttons.forEach((b, j) => b.classList.toggle('active', i === j));
-    $('pf-desc').textContent = DESC[i];
+    $('pf-desc').textContent = tr(DESC[i]);
     renderAuto($('pf-desc'));
   }
   buttons.forEach((b) => b.addEventListener('click', () => select(parseInt(b.dataset.i, 10))));
   select(0);
+  onLang(() => select(cur));
 }
 
 /* ---------- 4.2 collocation points ---------- */
@@ -948,12 +1071,12 @@ function initCollocation() {
   function update() {
     const mode = cMode.get(), I = interior(Math.round(cNi.get()), mode), B = boundary(Math.round(cNb.get()), mode);
     setChart(chart, [
-      dotSet('Interior (collocation) points', I, COLOR.accent, { pointRadius: I.length > 400 ? 1.8 : 2.6 }),
-      dotSet('Boundary / initial points', B.init.concat(B.left, B.right), COLOR.warm, { pointStyle: 'rect', pointRadius: 3.5 })
+      dotSet(tr('Interior (collocation) points'), I, COLOR.accent, { pointRadius: I.length > 400 ? 1.8 : 2.6 }),
+      dotSet(tr('Boundary / initial points'), B.init.concat(B.left, B.right), COLOR.warm, { pointStyle: 'rect', pointRadius: 3.5 })
     ]);
-    $('cp-info').textContent = 'Interior points N_i = ' + I.length + (mode === 'grid' ? ' (rounded to a regular grid)' : '') +
-      '; boundary/initial points N_b = ' + (B.init.length + B.left.length + B.right.length) +
-      ' (' + B.init.length + ' on t = 0, ' + B.left.length + ' on x = −1, ' + B.right.length + ' on x = 1).';
+    $('cp-info').textContent = trf('Interior points N_i = {0}{1}; boundary/initial points N_b = {2} ({3} on t = 0, {4} on x = −1, {5} on x = 1).',
+      I.length, mode === 'grid' ? ' ' + tr('(rounded to a regular grid)') : '',
+      B.init.length + B.left.length + B.right.length, B.init.length, B.left.length, B.right.length);
   }
 
   cMode = addControl('cp-controls', {
@@ -963,6 +1086,7 @@ function initCollocation() {
   cNi = addControl('cp-controls', { type: 'slider', id: 'cp-ni', label: 'Number of interior points', min: 10, max: 1000, step: 10, value: 300, onChange: update });
   cNb = addControl('cp-controls', { type: 'slider', id: 'cp-nb', label: 'Number of boundary/initial points', min: 4, max: 200, step: 2, value: 60, onChange: update });
   update();
+  onLang(update);
 }
 
 /* ---------- 4.3 loss function ---------- */
@@ -970,12 +1094,14 @@ function initLoss() {
   let ci, cb, ca;
   function update() {
     const mi = ci.get(), mb = cb.get(), a = ca.get(), total = mi + a * mb;
-    const pad = (s) => s.padEnd(14);
+    const names = [tr('Interior Loss'), tr('Boundary Loss'), 'α', tr('Total Loss')];
+    const w = Math.max.apply(null, names.map((n) => n.length)) + 1;
+    const pad = (s) => s.padEnd(w);
     $('ls-result').textContent =
-      pad('Interior Loss') + ': ' + sig(mi) + '\n' +
-      pad('Boundary Loss') + ': ' + sig(mb) + '\n' +
-      pad('α') + ': ' + a.toFixed(2) + '\n\n' +
-      pad('Total Loss') + ': ' + sig(total) + '\n' +
+      pad(names[0]) + ': ' + sig(mi) + '\n' +
+      pad(names[1]) + ': ' + sig(mb) + '\n' +
+      pad(names[2]) + ': ' + a.toFixed(2) + '\n\n' +
+      pad(names[3]) + ': ' + sig(total) + '\n' +
       pad('') + '  = ' + sig(mi) + ' + ' + a.toFixed(2) + ' × ' + sig(mb);
     const wi = total > 0 ? (100 * mi) / total : 50;
     const bar = $('ls-bar');
@@ -986,6 +1112,7 @@ function initLoss() {
   cb = addControl('ls-controls', { type: 'number', id: 'ls-mb', label: 'MSE boundary (boundary/initial residual)', min: 0, max: 1e6, value: 0.011, onChange: update });
   ca = addControl('ls-controls', { type: 'slider', id: 'ls-a', label: 'α (weight of the boundary term)', min: 0.01, max: 100, log: true, value: 1, onChange: update });
   update();
+  onLang(update);
 }
 
 /* ---------- 4.4 derivatives / automatic differentiation ---------- */
@@ -1001,24 +1128,24 @@ function initDerivatives() {
     const sets = [];
     if (cu.get()) {
       sets.push(lineSet('u(x)', sampleFn((t) => netU(P, H, t), -2, 2, 200), COLOR.accent));
-      sets.push(dotSet('u at x', [{ x, y: d.u }], COLOR.accent, { pointRadius: 5 }));
+      sets.push(dotSet(tr('u at x'), [{ x, y: d.u }], COLOR.accent, { pointRadius: 5 }));
     }
     if (cux.get()) {
       sets.push(lineSet('uₓ(x)', sampleFn((t) => netD(P, H, t).ux, -2, 2, 200), COLOR.dark, { borderDash: [6, 4] }));
-      sets.push(dotSet('uₓ at x', [{ x, y: d.ux }], COLOR.dark, { pointRadius: 5 }));
+      sets.push(dotSet(tr('uₓ at x'), [{ x, y: d.ux }], COLOR.dark, { pointRadius: 5 }));
     }
     if (cuxx.get()) {
       sets.push(lineSet('uₓₓ(x)', sampleFn((t) => netD(P, H, t).uxx, -2, 2, 200), COLOR.warm, { borderDash: [2, 3] }));
-      sets.push(dotSet('uₓₓ at x', [{ x, y: d.uxx }], COLOR.warm, { pointRadius: 5 }));
+      sets.push(dotSet(tr('uₓₓ at x'), [{ x, y: d.uxx }], COLOR.warm, { pointRadius: 5 }));
     }
     setChart(chart, sets);
 
     const u = (t) => netU(P, H, t);
     const fdUx = (u(x + dx) - u(x - dx)) / (2 * dx);
     const fdUxx = (u(x + dx) - 2 * u(x) + u(x - dx)) / (dx * dx);
-    const pad = (s) => s.padEnd(8);
+    const pad = (s) => s.padEnd(10);
     $('ad-result').textContent =
-      pad('x = ' + num(x, 3)) + '  chain rule      finite difference (h = 0.01)\n' +
+      pad('x = ' + num(x, 3)) + '  ' + tr('chain rule').padEnd(16) + tr('finite difference (h = 0.01)') + '\n' +
       pad('u') + '= ' + sig(d.u, 6).padEnd(14) + '\n' +
       pad('u_x') + '= ' + sig(d.ux, 6).padEnd(14) + '  ' + sig(fdUx, 6) + '\n' +
       pad('u_xx') + '= ' + sig(d.uxx, 6).padEnd(14) + '  ' + sig(fdUxx, 6);
@@ -1028,6 +1155,7 @@ function initDerivatives() {
   cux = addControl('ad-controls', { type: 'check', id: 'ad-sux', label: 'Show ∂u/∂x', value: true, onChange: update });
   cuxx = addControl('ad-controls', { type: 'check', id: 'ad-suxx', label: 'Show ∂²u/∂x²', value: true, onChange: update });
   update();
+  onLang(update);
 }
 
 /* ---------- 4.5 architecture ---------- */
@@ -1035,9 +1163,9 @@ function initArchitecture() {
   let cL, cH;
   function update() {
     const L = Math.round(cL.get()), H = Math.round(cH.get()), shown = Math.min(H, 6);
-    const cols = [{ n: 2, label: 'Input', names: ['x', 't'] }];
-    for (let i = 1; i <= L; i++) cols.push({ n: shown, label: 'Hidden ' + i });
-    cols.push({ n: 1, label: 'Output', names: ['u'] });
+    const cols = [{ n: 2, label: tr('Input'), names: ['x', 't'] }];
+    for (let i = 1; i <= L; i++) cols.push({ n: shown, label: trf('Hidden {0}', i) });
+    cols.push({ n: 1, label: tr('Output'), names: ['u'] });
 
     const gap = 130, W = 120 + gap * (cols.length - 1), cy = 120, dy = 34;
     const pos = cols.map((c, i) => Array.from({ length: c.n }, (_, j) => [60 + gap * i, cy + (j - (c.n - 1) / 2) * dy]));
@@ -1061,12 +1189,13 @@ function initArchitecture() {
     svgEl.innerHTML = svg;
 
     const params = 3 * H + (L - 1) * (H * H + H) + (H + 1);
-    $('ar-info').textContent = L + ' hidden layer' + (L > 1 ? 's' : '') + ' with ' + H + ' neurons each' +
-      (H > 6 ? ' (only 6 neurons are drawn per layer)' : '') + '; ' + params + ' trainable parameters for 2 inputs and 1 output.';
+    $('ar-info').textContent = trf(L > 1 ? '{0} hidden layers with {1} neurons each' : '{0} hidden layer with {1} neurons each', L, H) +
+      (H > 6 ? ' ' + tr('(only 6 neurons are drawn per layer)') : '') + '; ' + trf('{0} trainable parameters for 2 inputs and 1 output.', params);
   }
   cL = addControl('ar-controls', { type: 'slider', id: 'ar-L', label: 'Hidden layers', min: 1, max: 6, step: 1, value: 2, onChange: update });
   cH = addControl('ar-controls', { type: 'slider', id: 'ar-H', label: 'Neurons per hidden layer', min: 1, max: 50, step: 1, value: 10, onChange: update });
   update();
+  onLang(update);
 }
 
 /* ---------- 5 forward problem: shallow PINN for the Bratu equation ---------- */
@@ -1102,25 +1231,29 @@ function initForward() {
 
   function draw(iters) {
     const q = params(), p = FW.lm.p, sets = [];
-    if (cAna.get()) sets.push(lineSet('Analytical', sampleFn((x) => bratuExact(q.C, x), 0, 1, 200), COLOR.dark, { borderWidth: 3, borderColor: '#9aa0a6', backgroundColor: '#9aa0a6' }));
+    if (cAna.get()) sets.push(lineSet(tr('Analytical'), sampleFn((x) => bratuExact(q.C, x), 0, 1, 200), COLOR.dark, { borderWidth: 3, borderColor: '#9aa0a6', backgroundColor: '#9aa0a6' }));
     if (cPinn.get()) {
       sets.push(lineSet('PINN u(x; W)', sampleFn((x) => netU(p, q.H, x), 0, 1, 200), COLOR.accent, { borderWidth: 1.8 }));
       const pts = [];
       for (let i = 0; i < q.Ni; i++) pts.push({ x: XI[i], y: netU(p, q.H, XI[i]) });
-      sets.push(dotSet('Interior points (N_i)', pts, COLOR.warm, { pointRadius: 1.8 }));
+      sets.push(dotSet(tr('Interior points (N_i)'), pts, COLOR.warm, { pointRadius: 1.8 }));
     }
-    sets.push(dotSet('Boundary points', [{ x: 0, y: 0 }, { x: 1, y: 0 }], '#222', { pointStyle: 'rectRot', pointRadius: 6, backgroundColor: '#fff' }));
+    sets.push(dotSet(tr('Boundary points'), [{ x: 0, y: 0 }, { x: 1, y: 0 }], '#222', { pointStyle: 'rectRot', pointRadius: 6, backgroundColor: '#fff' }));
     setChart(chart, sets);
 
     const pt = parts(p, q);
     let err = 0;
     for (let i = 0; i <= 100; i++) err = Math.max(err, Math.abs(netU(p, q.H, i / 100) - bratuExact(q.C, i / 100)));
-    $('fw-stat').textContent =
-      'Iterations     : ' + iters + '\n' +
-      'MSE interior   : ' + pt.mi.toExponential(3) + '\n' +
-      'MSE boundary   : ' + pt.mb.toExponential(3) + '\n' +
-      'Total loss     : ' + (pt.mi + q.alpha * pt.mb).toExponential(3) + '   (MSE_i + α MSE_b, α = ' + sig(q.alpha, 3) + ')\n' +
-      'max |u - exact|: ' + err.toExponential(2) + '   (slides: loss 2.47038e-07 with BFGS)';
+    const names = [tr('Iterations'), tr('MSE interior'), tr('MSE boundary'), tr('Total loss'), tr('max |u - exact|')];
+    const w = Math.max.apply(null, names.map((n) => n.length));
+    const row = (i, v) => names[i].padEnd(w) + ' : ' + v;
+    $('fw-stat').textContent = [
+      row(0, iters),
+      row(1, pt.mi.toExponential(3)),
+      row(2, pt.mb.toExponential(3)),
+      row(3, (pt.mi + q.alpha * pt.mb).toExponential(3) + '   (MSE_i + α MSE_b, α = ' + sig(q.alpha, 3) + ')'),
+      row(4, err.toExponential(2) + '   ' + tr('(slides: loss 2.47038e-07 with BFGS)'))
+    ].join('\n');
   }
 
   function train(iters) {
@@ -1154,6 +1287,7 @@ function initForward() {
   $('fw-reset').addEventListener('click', () => { FW.seed += 1; reinit(); train(250); });
 
   reinit();
+  onLang(() => draw(FW.base));
   onceVisible($('fw-chart'), () => train(250));
 }
 
@@ -1195,19 +1329,19 @@ function initInverse() {
 
   function draw() {
     const t1 = ct1.get(), t2 = ct2.get(), P = 3 * H + 1, sets = [];
-    let est1 = cg1.get(), est2 = cg2.get(), estLabel = ' (initial guess)', stat = '';
+    let est1 = cg1.get(), est2 = cg2.get(), estLabel = ' ' + tr('(initial guess)'), stat = '';
     if (ok) {
-      sets.push(lineSet('True solution', sampleFn((x) => inverseExact(t1, t2, x), 0, 1, 200), COLOR.dark, { borderWidth: 2.5, borderColor: '#9aa0a6', backgroundColor: '#9aa0a6' }));
-      sets.push(dotSet('Observed data', IV.xs.map((x, i) => ({ x, y: IV.obs[i] })), COLOR.warm, { pointRadius: 3.5 }));
+      sets.push(lineSet(tr('True solution'), sampleFn((x) => inverseExact(t1, t2, x), 0, 1, 200), COLOR.dark, { borderWidth: 2.5, borderColor: '#9aa0a6', backgroundColor: '#9aa0a6' }));
+      sets.push(dotSet(tr('Observed data'), IV.xs.map((x, i) => ({ x, y: IV.obs[i] })), COLOR.warm, { pointRadius: 3.5 }));
     }
     if (IV.lm) {
       const q = IV.lm.p;
       est1 = q[P]; est2 = q[P + 1]; estLabel = '';
-      sets.push(lineSet('PINN estimate u(x; W)', sampleFn((x) => netU(q, H, x), 0, 1, 200), COLOR.accent));
+      sets.push(lineSet(tr('PINN estimate u(x; W)'), sampleFn((x) => netU(q, H, x), 0, 1, 200), COLOR.accent));
       const r = residual(q);
       let mde = 0, mdata = 0;
       r.forEach((v, i) => { if (i % 2 === 0) mde += v * v; else mdata += v * v; });
-      stat = 'Iterations: ' + IV.base + '  |  MSE_DE = ' + mde.toExponential(3) + '  |  MSE_data = ' + mdata.toExponential(3) + '  |  slides: loss 9.1483e-08 (Levenberg–Marquardt)';
+      stat = trf('Iterations: {0}  |  MSE_DE = {1}  |  MSE_data = {2}  |  slides: loss 9.1483e-08 (Levenberg–Marquardt)', IV.base, mde.toExponential(3), mdata.toExponential(3));
     }
     setChart(chart, sets);
 
@@ -1215,9 +1349,9 @@ function initInverse() {
     document.querySelector('#iv-table tbody').innerHTML =
       '<tr><td>λ₁</td><td>' + num(t1, 4) + '</td><td>' + num(est1, 4) + estLabel + '</td><td>' + rel(est1, t1) + '</td></tr>' +
       '<tr><td>λ₂</td><td>' + num(t2, 4) + '</td><td>' + num(est2, 4) + estLabel + '</td><td>' + rel(est2, t2) + '</td></tr>';
-    $('iv-stat').textContent = ok ? (stat || 'Press Estimate to start from the initial guess.') :
-      'No solution for these values: λ₁λ₂/2 = ' + num(0.5 * t1 * t2, 3) + ' exceeds C* ≈ ' + num(IV.cstar, 3) + '.';
-    $('iv-run').textContent = IV.lm ? 'Continue estimating' : 'Estimate';
+    $('iv-stat').textContent = ok ? (stat || tr('Press Estimate to start from the initial guess.')) :
+      trf('No solution for these values: λ₁λ₂/2 = {0} exceeds C* ≈ {1}.', num(0.5 * t1 * t2, 3), num(IV.cstar, 3));
+    $('iv-run').textContent = tr(IV.lm ? 'Continue estimating' : 'Estimate');
   }
 
   function run() {
@@ -1243,6 +1377,7 @@ function initInverse() {
   $('iv-run').addEventListener('click', run);
   $('iv-reset').addEventListener('click', setupData);
   setupData();
+  onLang(draw);
 }
 
 
@@ -1257,10 +1392,9 @@ const mascotSvg = (id, cls) =>
   '<svg class="' + cls + '" viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#' + id + '"></use></svg>';
 const slug = (t) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
-/* ---------- page flow: chapter mascots, next links, reveal, progress bar, side contents ---------- */
-function initFlow() {
+/* ---------- structure added by script: chapter mascots, next links, takeaway wrappers ---------- */
+function decorate() {
   const sections = Array.from(document.querySelectorAll('main > section'));
-  const navLinks = Array.from(document.querySelectorAll('#nav-links a'));
   const MOOD = {
     'big-idea': 'neuro', 'introduction': 'neuro', 'neural-networks': 'neuro-think', 'differential-equations': 'neuro-think',
     'pinns': 'neuro-ooh', 'forward': 'neuro', 'inverse': 'neuro-think', 'advantages': 'neuro-ooh', 'references': 'neuro'
@@ -1268,19 +1402,31 @@ function initFlow() {
 
   sections.forEach((sec, i) => {
     const h2 = sec.querySelector('h2');
-    if (h2) h2.insertAdjacentHTML('afterbegin', mascotSvg(MOOD[sec.id] || 'neuro', 'chapter-mascot'));
+    if (h2) h2.innerHTML = mascotSvg(MOOD[sec.id] || 'neuro', 'chapter-mascot') + '<span class="h2t">' + h2.innerHTML + '</span>';
     sec.querySelectorAll('h3').forEach((h) => { if (!h.id) h.id = slug(h.textContent); });
-    if (i < sections.length - 1) {          // guided "next" link at the end of every part
-      const next = sections[i + 1];
-      const label = navLinks.find((a) => a.getAttribute('href') === '#' + next.id);
-      sec.insertAdjacentHTML('beforeend',
-        '<div class="next-link"><a href="#' + next.id + '">Next: ' + (label ? label.textContent : '') + ' &rarr;</a></div>');
+    if (i < sections.length - 1) {          // guided "next" link at the end of every part (text set by refreshNextLinks)
+      sec.insertAdjacentHTML('beforeend', '<div class="next-link"><a href="#' + sections[i + 1].id + '"></a></div>');
     }
   });
 
   document.querySelectorAll('section .takeaway').forEach((el) => {
     el.innerHTML = mascotSvg('neuro', 'mini-mascot') + '<span>' + el.innerHTML + '</span>';
   });
+}
+
+/* "Next: <part name> →" uses the current (translated) navigation text. */
+function refreshNextLinks() {
+  const navLinks = Array.from(document.querySelectorAll('#nav-links a'));
+  document.querySelectorAll('.next-link a').forEach((a) => {
+    const label = navLinks.find((n) => n.getAttribute('href') === a.getAttribute('href'));
+    a.innerHTML = tr('Next:') + ' ' + (label ? label.textContent : '') + ' &rarr;';
+  });
+}
+
+/* ---------- page flow: reveal, progress bar, side contents ---------- */
+function initFlow() {
+  const sections = Array.from(document.querySelectorAll('main > section'));
+  refreshNextLinks();
 
   // fade-in when a block first scrolls into view (skipped for reduced motion)
   if ('IntersectionObserver' in window && !REDUCED) {
@@ -1298,7 +1444,7 @@ function initFlow() {
   const bar = $('progress');
   const toc = document.createElement('aside');
   toc.id = 'toc';
-  toc.setAttribute('aria-label', 'On this page');
+  toc.setAttribute('aria-label', tr('On this page'));
   document.body.appendChild(toc);
   let tocFor = null, ticking = false;
 
@@ -1307,7 +1453,7 @@ function initFlow() {
     tocFor = sec;
     const hs = sec ? Array.from(sec.querySelectorAll('h3')) : [];
     if (!hs.length) { toc.classList.remove('show'); toc.innerHTML = ''; return; }
-    toc.innerHTML = '<div class="toc-title">On this page</div><ul>' +
+    toc.innerHTML = '<div class="toc-title">' + tr('On this page') + '</div><ul>' +
       hs.map((h) => '<li><a href="#' + h.id + '">' + h.textContent + '</a></li>').join('') + '</ul>';
     toc.classList.add('show');
   }
@@ -1328,6 +1474,12 @@ function initFlow() {
   window.addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
   window.addEventListener('resize', onScroll);
   onScroll();
+  onLang(() => {                         // new language: next links and the side list change text
+    refreshNextLinks();
+    toc.setAttribute('aria-label', tr('On this page'));
+    tocFor = null;
+    onScroll();
+  });
 }
 
 /* ---------- hero guide: tips on click ---------- */
@@ -1343,13 +1495,15 @@ function initHero() {
     'Not sure where to begin? Open the Big Idea part: no mathematics needed.'
   ];
   let i = 0;
+  bubble.textContent = tr(tips[0]);
+  onLang(() => { bubble.textContent = tr(tips[i]); });
   btn.addEventListener('click', () => {
     i = (i + 1) % tips.length;
     btn.classList.remove('hop');
     void btn.offsetWidth;
     btn.classList.add('hop');
     bubble.classList.add('swap');
-    setTimeout(() => { bubble.textContent = tips[i]; bubble.classList.remove('swap'); }, 180);
+    setTimeout(() => { bubble.textContent = tr(tips[i]); bubble.classList.remove('swap'); }, 180);
   });
   btn.addEventListener('animationend', (e) => { if (e.animationName === 'hop') btn.classList.remove('hop'); });
 }
@@ -1483,7 +1637,7 @@ function initStory() {
         p = nets[i].map((v, k) => v + (nets[(i + 1) % 3][k] - v) * e);
       }
       curve = sampleFn((x) => netU(p, H, x), 0, 1, 80);
-      weights = 'weights W:  a₁ = ' + num(p[0], 2) + ',  c₁ = ' + num(p[H], 2) + ',  v₁ = ' + num(p[2 * H], 2) + ',  …  (' + (3 * H + 1) + ' in total)';
+      weights = trf('weights W:  a₁ = {0},  c₁ = {1},  v₁ = {2},  …  ({3} in total)', num(p[0], 2), num(p[H], 2), num(p[2 * H], 2), 3 * H + 1);
     } else if (st >= 3) {
       frame = frames[Math.min(frames.length - 1, Math.floor(S.fi))];
       curve = frame.curve;
@@ -1510,21 +1664,21 @@ function initStory() {
       s += '<text class="halo" x="' + (B.x1 - 12) + '" y="' + (Y(0) - 10) + '" text-anchor="end">u(1) = 0</text>';
     }
     if (st === 1) s += '<text x="' + (B.x0 + 8) + '" y="' + (B.top + 16) + '" style="fill:#5f6368">' + weights + '</text>';
-    if (st === 2) s += '<text x="' + ((B.x0 + B.x1) / 2) + '" y="' + (B.top + 22) + '" text-anchor="middle" class="big">rule:  uₓₓ + 2e^u = 0</text>';
+    if (st === 2) s += '<text x="' + ((B.x0 + B.x1) / 2) + '" y="' + (B.top + 22) + '" text-anchor="middle" class="big">' + tr('rule:') + '  uₓₓ + 2e^u = 0</text>';
 
     if (st < 3) {
-      const hint = st === 1 ? 'Nothing forces this curve to obey any rule yet.' : 'In the next step we measure how far a curve is from obeying the rule.';
+      const hint = tr(st === 1 ? 'Nothing forces this curve to obey any rule yet.' : 'In the next step we measure how far a curve is from obeying the rule.');
       s += '<text x="' + ((B.x0 + B.x1) / 2) + '" y="' + (B.base - 34) + '" text-anchor="middle" style="fill:#5f6368;font-style:italic">' + hint + '</text>';
     }
     if (st >= 3 && frame) {
-      s += '<text x="' + B.x0 + '" y="' + (B.base - B.cap - 12) + '" style="fill:#5f6368">rule violation at sample points: |uₓₓ + 2e^u|</text>';
+      s += '<text x="' + B.x0 + '" y="' + (B.base - B.cap - 12) + '" style="fill:#5f6368">' + tr('rule violation at sample points: |uₓₓ + 2e^u|') + '</text>';
       s += '<line x1="' + B.x0 + '" y1="' + B.base + '" x2="' + B.x1 + '" y2="' + B.base + '" stroke="#bbb"/>';
       frame.bars.forEach((b) => {
         const h = Math.max(1.5, Math.min(B.cap, b.r * B.k));
         s += '<rect x="' + (X(b.x) - 8) + '" y="' + (B.base - h) + '" width="16" height="' + h.toFixed(1) + '" fill="' + COLOR.warm + '" opacity="0.85"/>';
       });
-      s += '<text class="big" x="' + (B.x1 - 6) + '" y="' + (B.top + 20) + '" text-anchor="end">loss = ' + frame.cost.toExponential(1) + '</text>';
-      if (st === 4) s += '<text x="' + (B.x1 - 6) + '" y="' + (B.top + 38) + '" text-anchor="end" style="fill:#5f6368">iteration ' + frame.it + '</text>';
+      s += '<text class="big" x="' + (B.x1 - 6) + '" y="' + (B.top + 20) + '" text-anchor="end">' + tr('loss') + ' = ' + frame.cost.toExponential(1) + '</text>';
+      if (st === 4) s += '<text x="' + (B.x1 - 6) + '" y="' + (B.top + 38) + '" text-anchor="end" style="fill:#5f6368">' + tr('iteration') + ' ' + frame.it + '</text>';
     }
     svg.innerHTML = s;
   }
@@ -1557,7 +1711,7 @@ function initStory() {
     S.stage = n; S.fi = 0; S.playing = n === 4;
     if (n >= 3) ensureFrames();
     tabs.forEach((b) => b.classList.toggle('active', parseInt(b.dataset.s, 10) === n));
-    caption.innerHTML = CAPTIONS[n];
+    caption.innerHTML = tr(CAPTIONS[n]);
     renderAuto(caption);
     prev.disabled = n === 1;
     next.disabled = n === 4;
@@ -1580,6 +1734,7 @@ function initStory() {
   }
 
   setStage(1, false);
+  onLang(() => { caption.innerHTML = tr(CAPTIONS[S.stage]); renderAuto(caption); render(); });
   if (!REDUCED) {
     onceVisible(svg, () => {      // play the story once, then leave it to the reader
       S.timers = [
@@ -1592,6 +1747,8 @@ function initStory() {
 }
 /* ---------- start-up ---------- */
 function init() {
+  decorate();       // structure added by script (must come before the text is captured)
+  i18nInit();       // remember the English text, then apply the saved language
   if (typeof katex === 'undefined' || typeof renderMathInElement !== 'function') {
     libWarning('The KaTeX library could not be loaded (no connection to cdn.jsdelivr.net?). Equations will appear as plain LaTeX.');
   } else {
